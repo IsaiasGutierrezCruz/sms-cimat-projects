@@ -1,11 +1,15 @@
 ---
 title: "Análisis de Rendimiento Automotriz"
-author: "IsaiasGutierrez"
+author: "Abel Isaias Gutierrez Cruz"
 date: "`r Sys.Date()`"
 output:
   pdf_document:
     toc: true
     number_sections: true
+    fig_width: 8
+    fig_height: 5
+    keep_tex: false
+    latex_engine: pdflatex
   html_document:
     theme: flatly
     highlight: tango
@@ -24,7 +28,7 @@ knitr::opts_chunk$set(
   warning = FALSE,
   message = FALSE,
   fig.width = 8,
-  fig.height = 6,
+  fig.height = 5,
   fig.align = "center",
   cache = FALSE
 )
@@ -62,7 +66,7 @@ Este informe presenta un análisis detallado del conjunto de datos de rendimient
 
 # Data Loading and Preprocessing
 
-```{r data-loading}
+```{r data-loading, fig.width=10, fig.height=6, echo=FALSE}
 # Load the dataset with proper column specifications
 # data_path <- here("data", "raw", params$data_file)
 data_path <- here("data", "raw", "Rendimiento.xlsx")
@@ -83,24 +87,14 @@ colnames(rendimiento) <- c(
   "Transmission", "Fuel_Type", "Consumption_City", "Consumption_Highway",
   "Consumption_Combined", "Cost_Per_Year", "CO2_Emissions", "CO2_Rating"
 )
-
-# Display basic information about the dataset
-cat("Dimensiones del dataset:", dim(rendimiento), "\n")
-cat("Número de observaciones:", nrow(rendimiento), "\n")
-cat("Número de variables:", ncol(rendimiento), "\n")
-
-# Show first few rows
-head(rendimiento) %>%
-  kable(caption = "Primeras filas del dataset") %>%
-  kable_styling(bootstrap_options = c("striped", "hover"))
 ```
 
-```{r data-exploration}
-# Basic data exploration
-summary(rendimiento) %>%
-  kable(caption = "Resumen estadístico del dataset") %>%
-  kable_styling(bootstrap_options = c("striped", "hover"))
+- Dimensiones del dataset: `r dim(rendimiento)`
+- Número de observaciones: `r nrow(rendimiento)`
+- Número de variables: `r ncol(rendimiento)`
 
+
+```{r data-exploration, fig.width=10, fig.height=6, echo=FALSE}
 # Check for missing values
 missing_values <- rendimiento %>%
   summarise_all(~sum(is.na(.))) %>%
@@ -121,14 +115,14 @@ brand_summary %>%
     caption = "Distribución de marcas en el dataset",
     col.names = c("Marca", "Frecuencia", "Porcentaje (%)")
   ) %>%
-  kable_styling(bootstrap_options = c("striped", "hover"))
+  kable_styling(bootstrap_options = c("striped", "hover"), latex_options = "scale_down")
 ```
 
 # Análisis Específicos por Marca
 
 ## 1. Análisis de la Variable "Class" para la Marca Toyota
 
-```{r toyota-class-analysis}
+```{r toyota-class-analysis, fig.width=6, fig.height=4, echo=FALSE}
 # Filter data for Toyota brand
 toyota_data <- rendimiento %>%
   filter(Marca == "TOYOTA")
@@ -153,7 +147,7 @@ toyota_class_freq %>%
 p1 <- ggplot(toyota_class_freq, aes(x = reorder(Class, n), y = n)) +
   geom_bar(stat = "identity", fill = "steelblue", alpha = 0.7) +
   geom_text(aes(label = paste(n, "(", Percentage, "%)")), 
-            hjust = -0.1, size = 3.5) +
+            hjust = -0.1, size = 2.5) +
   coord_flip() +
   labs(
     title = "Distribución de Clases de Vehículos Toyota",
@@ -164,9 +158,14 @@ p1 <- ggplot(toyota_class_freq, aes(x = reorder(Class, n), y = n)) +
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, face = "bold"),
-    plot.subtitle = element_text(hjust = 0.5)
-  )
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 10),
+    plot.subtitle = element_text(hjust = 0.5, size = 8),
+    axis.text = element_text(size = 8),
+    axis.title = element_text(size = 9),
+    plot.margin = margin(0.5, 1, 0.5, 0.5, "cm")
+  ) +
+  scale_x_discrete(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, max(toyota_class_freq$n) * 1.2))
 
 print(p1)
 
@@ -180,7 +179,7 @@ La clase más común en Toyota es `r most_common_class` con `r most_common_count
 
 ## 2. Análisis de la Variable "Transmission" para la Marca Mazda
 
-```{r mazda-transmission-analysis}
+```{r mazda-transmission-analysis, fig.width=6, fig.height=4, echo=FALSE}
 # Filter data for Mazda brand
 mazda_data <- rendimiento %>%
   filter(Marca == "MAZDA")
@@ -205,7 +204,7 @@ mazda_transmission_freq %>%
 p2 <- ggplot(mazda_transmission_freq, aes(x = reorder(Transmission, n), y = n)) +
   geom_bar(stat = "identity", fill = "forestgreen", alpha = 0.7) +
   geom_text(aes(label = paste(n, "(", Percentage, "%)")), 
-            hjust = -0.1, size = 3.5) +
+            hjust = -0.1, size = 2.5) +
   coord_flip() +
   labs(
     title = "Distribución de Tipos de Transmisión en Mazda",
@@ -216,9 +215,14 @@ p2 <- ggplot(mazda_transmission_freq, aes(x = reorder(Transmission, n), y = n)) 
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, face = "bold"),
-    plot.subtitle = element_text(hjust = 0.5)
-  )
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 10),
+    plot.subtitle = element_text(hjust = 0.5, size = 8),
+    axis.text = element_text(size = 8),
+    axis.title = element_text(size = 9),
+    plot.margin = margin(0.5, 1, 0.5, 0.5, "cm")
+  ) +
+  scale_x_discrete(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, max(mazda_transmission_freq$n) * 1.2))
 
 print(p2)
 
@@ -233,7 +237,7 @@ El tipo de transmisión más común en Mazda es `r most_common_trans` (transmisi
 
 ## 3. Estadísticas Básicas de CO2 Emissions para la Marca Porsche
 
-```{r porsche-co2-analysis}
+```{r porsche-co2-analysis, fig.width=6, fig.height=4, echo=FALSE}
 # Filter data for Porsche brand
 porsche_data <- rendimiento %>%
   filter(Marca == "PORSCHE")
@@ -269,10 +273,10 @@ co2_stats_long %>%
 p3 <- ggplot(porsche_data, aes(x = CO2_Emissions)) +
   geom_histogram(bins = 10, fill = "darkred", alpha = 0.7, color = "black") +
   geom_vline(aes(xintercept = mean(CO2_Emissions)), 
-              color = "blue", linetype = "dashed", size = 1) +
+              color = "blue", linetype = "dashed", size = 0.8) +
   geom_text(aes(x = mean(CO2_Emissions), y = Inf, 
                 label = paste("Media =", round(mean(CO2_Emissions), 2))),
-            vjust = 1.5, hjust = -0.1, color = "blue", size = 4) +
+            vjust = 1.5, hjust = -0.1, color = "blue", size = 3) +
   labs(
     title = "Distribución de Emisiones de CO2 en Vehículos Porsche",
     subtitle = paste("n =", nrow(porsche_data), "vehículos"),
@@ -282,19 +286,25 @@ p3 <- ggplot(porsche_data, aes(x = CO2_Emissions)) +
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, face = "bold"),
-    plot.subtitle = element_text(hjust = 0.5)
-  )
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 10),
+    plot.subtitle = element_text(hjust = 0.5, size = 8),
+    axis.text = element_text(size = 8),
+    axis.title = element_text(size = 9),
+    plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")
+  ) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0))
 
 print(p3)
 ```
 
 Se puede observar que las emisiones de CO2 para los automoviles Porsche muestran una distribucion sesgada a la izquierda. Además, de una alta variabilidad en las emisiones. Sin embargo, los valores más grandes son asimismo atipicos, por lo que la media y mediana en este caso son buenas medidas de tendencia central. 
-Teniendo en cuenta lo anterior, se puede determinar que los automoviles Porsche tienen una emision de CO2 promedio de `r co2_stats$Media` g/km. 
+
+Teniendo en cuenta lo anterior, se puede determinar que los automoviles Porsche tienen una emision de CO2 promedio de `r co2_stats$Media` g/km.
 
 ## 4. Estadísticas Básicas de Consumption Combined para la Marca Dodge
 
-```{r dodge-consumption-analysis}
+```{r dodge-consumption-analysis, fig.width=6, fig.height=4, echo=FALSE}
 # Filter data for Dodge brand
 dodge_data <- rendimiento %>%
   filter(Marca == "DODGE")
@@ -330,10 +340,10 @@ consumption_stats_long %>%
 p4 <- ggplot(dodge_data, aes(x = Consumption_Combined)) +
   geom_histogram(bins = 8, fill = "orange", alpha = 0.7, color = "black") +
   geom_vline(aes(xintercept = mean(Consumption_Combined)), 
-              color = "blue", linetype = "dashed", size = 1) +
+              color = "blue", linetype = "dashed", size = 0.8) +
   geom_text(aes(x = mean(Consumption_Combined), y = Inf, 
                 label = paste("Media =", round(mean(Consumption_Combined), 2))),
-            vjust = 1.5, hjust = -0.1, color = "blue", size = 4) +
+            vjust = 1.5, hjust = -0.1, color = "blue", size = 3) +
   labs(
     title = "Distribución de Consumo Combinado en Vehículos Dodge",
     subtitle = paste("n =", nrow(dodge_data), "vehículos"),
@@ -343,19 +353,23 @@ p4 <- ggplot(dodge_data, aes(x = Consumption_Combined)) +
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, face = "bold"),
-    plot.subtitle = element_text(hjust = 0.5)
-  )
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 10),
+    plot.subtitle = element_text(hjust = 0.5, size = 8),
+    axis.text = element_text(size = 8),
+    axis.title = element_text(size = 9),
+    plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")
+  ) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0))
 
 print(p4)
 ```
 
-Los vehículos Dodge muestran un consumo moderado (8-12 L/100km). Asimismo, con la muestra de 48 vehiculos, se puede observar que el consumo de combustible en estos autos sigue una distribución normal. Por lo que para describir la muestra, la media y mediana son buenas medidas de tendencia central. 
+Los vehículos Dodge muestran un consumo moderado (8-12 L/100km). Asimismo, con la muestra de 48 vehiculos, se puede observar que el consumo de combustible en estos autos sigue una distribución normal. Por lo que para describir la muestra, la media y mediana son buenas medidas de tendencia central.
 
 ## 5. Análisis del Mejor Vehículo del Dataset
 
 Con el objetivo de seleccionar el mejor vehículo del dataset, se desarrolló un sistema de puntuación integral que evalúa múltiples dimensiones del rendimiento automotriz. La metodología empleada se basa en la normalización de variables y ponderación de criterios según su relevancia. La metodología se describe a continuación:
-
 
 ### Metodología del Sistema de Puntuación
 
@@ -374,17 +388,21 @@ Esta fórmula garantiza que:
 
 #### 2. Criterios de Evaluación y Ponderación
 
-**a) Eficiencia de Combustible (40% del score total):**
+
+a) Eficiencia de Combustible (40% del score total):
+
 - **Variable:** Consumo Combinado (L/100km)
 - **Justificación:** La eficiencia energética es crucial por consideraciones económicas y ambientales. Un menor consumo reduce costos operativos y dependencia de combustibles.
 - **Peso:** 40% - Mayor ponderación por su impacto directo en el usuario y ambiente.
 
-**b) Impacto Ambiental (40% del score total):**
+b) Impacto Ambiental (40% del score total):
+
 - **Variable:** Emisiones de CO2 (g/km)
 - **Justificación:** Las emisiones de CO2 son un indicador directo del impacto climático. En el contexto actual de cambio climático, minimizar emisiones es prioritario.
 - **Peso:** 40% - Ponderación equivalente a eficiencia por importancia ambiental.
 
-**c) Costo Económico (20% del score total):**
+c) Costo Económico (20% del score total):
+
 - **Variable:** Costo Anual de Combustible ($)
 - **Justificación:** Representa el impacto económico directo para el propietario.
 - **Peso:** 20% - Menor ponderación ya que está correlacionado con la eficiencia.
@@ -395,7 +413,6 @@ Esta fórmula garantiza que:
 Score_Total = (Score_Eficiencia × 0.4) + (Score_Ambiental × 0.4) + (Score_Económico × 0.2)
 ```
 
-
 #### 4. Ventajas de esta Metodología
 
 - **Objetividad:** Basada en datos cuantitativos, no en preferencias subjetivas
@@ -404,11 +421,9 @@ Score_Total = (Score_Eficiencia × 0.4) + (Score_Ambiental × 0.4) + (Score_Econ
 - **Flexibilidad:** Los pesos pueden ajustarse según prioridades específicas
 - **Robustez:** Considera múltiples dimensiones del rendimiento
 
+Considerando esta metodología, a continuación se presentan los 10 mejores automoviles considerando el score total:
 
-Considerando esta metodología, a continuación se presentan los 10 mejores automoviles considerando el score total: 
-
-
-```{r best-vehicle-analysis}
+```{r best-vehicle-analysis, fig.width=6, fig.height=4, echo=FALSE}
 # Define criteria for "best" vehicle (lower is better for consumption and emissions)
 
 # Calculate efficiency scores (lower values are better, so we'll use inverse scaling)
@@ -445,24 +460,21 @@ top_vehicles <- vehicle_scores %>%
 
 # Display top vehicles
 top_vehicles %>%
+  select(Ranking, Marca, Make_Model, Consumption_Combined, CO2_Emissions, Cost_Per_Year, Combined_Score) %>%
   kable(
     caption = "Top 10 Mejores Vehículos según Análisis Integral",
-    col.names = c("Ranking", "Marca", "Modelo", "Clase", "Consumo (L/100km)", 
-                  "CO2 (g/km)", "Costo/Año ($)", "Score Eficiencia", 
-                  "Score Ambiental", "Score Económico", "Score Total")
+    col.names = c("Rank", "Marca", "Modelo",  "Consumo (L/100km)", 
+                  "CO2 (g/km)", "Costo/Año ($)", "Score Total"),
   ) %>%
-  kable_styling(bootstrap_options = c("striped", "hover")) %>%
+  kable_styling( latex_options = "scale_down", font_size = 8) %>%
   row_spec(1, bold = TRUE, background = "#90EE90")
 
 best_vehicle <- top_vehicles[1, ]
-
-
-
 ```
 
-A continuación se muestra una comparación gráfica de los 5 mejores vehículos según el score total: 
+A continuación se muestra una comparación gráfica de los 5 mejores vehículos según el segmentado de acuerdo a los criterios de evaluación:
 
-```{r best-vehicle-comparison}
+```{r best-vehicle-comparison, fig.width=6, fig.height=4, echo=FALSE}
 comparison_data <- vehicle_scores %>%
   head(5) %>%
   select(Make_Model, Efficiency_Score, Environmental_Score, Economic_Score) %>%
@@ -488,9 +500,14 @@ p5 <- ggplot(comparison_data, aes(x = reorder(Make_Model, Score), y = Score, fil
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, face = "bold"),
-    plot.subtitle = element_text(hjust = 0.5)
-  )
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 10),
+    plot.subtitle = element_text(hjust = 0.5, size = 8),
+    axis.text = element_text(size = 8),
+    axis.title = element_text(size = 9),
+    plot.margin = margin(0.5, 1, 0.5, 0.5, "cm")
+  ) +
+  scale_x_discrete(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 10.5))
 
 print(p5)
 
@@ -505,14 +522,11 @@ brand_performance <- rendimiento %>%
   ) %>%
   arrange(Avg_Consumption)
 
-
 total_vehicles <- nrow(rendimiento)
 avg_consumption <- round(mean(rendimiento$Consumption_Combined, na.rm = TRUE), 2)
 avg_emissions <- round(mean(rendimiento$CO2_Emissions, na.rm = TRUE), 2)
 avg_cost <- round(mean(rendimiento$Cost_Per_Year, na.rm = TRUE), 2)
 ```
-
-
 
 ### Conclusión 
 
@@ -529,10 +543,13 @@ Características sobresalientes:
 - Emisiones CO2: `r best_vehicle$CO2_Emissions` g/km
 - Costo Anual: `r best_vehicle$Cost_Per_Year` dólares
 
-
 El promedio de los vehículos del dataset es la siguiente: 
 
 - Consumo promedio del dataset: `r avg_consumption` L/100km
 - Emisiones promedio del dataset: `r avg_emissions` g/km
 - Costo promedio del dataset: `r avg_cost` dólares
 
+
+## Código Fuentes
+
+Repositorio de Github: [Codigo](https://github.com/IsaiasGutierrez/statistics-in-research)
