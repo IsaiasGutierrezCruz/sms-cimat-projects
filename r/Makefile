@@ -50,6 +50,11 @@ r-script: ## Run an R script (usage: make r-script SCRIPT=script.R)
 	@if [ -z "$(SCRIPT)" ]; then echo "Usage: make r-script SCRIPT=script.R"; exit 1; fi
 	docker-compose -f $(COMPOSE_FILE) exec $(SERVICE_NAME) Rscript $(SCRIPT)
 
+.PHONY: render-rmd-in-container
+render-rmd-in-container: ## Render R Markdown file (usage: make render-rmd-in-container FILE=report.Rmd)
+	@if [ -z "$(FILE)" ]; then echo "Usage: make render-rmd-in-container FILE=report.Rmd"; exit 1; fi
+	Rscript -e "rmarkdown::render('$(FILE)')"
+
 .PHONY: render-rmd
 render-rmd: ## Render R Markdown file (usage: make render-rmd FILE=report.Rmd)
 	@if [ -z "$(FILE)" ]; then echo "Usage: make render-rmd FILE=report.Rmd"; exit 1; fi
