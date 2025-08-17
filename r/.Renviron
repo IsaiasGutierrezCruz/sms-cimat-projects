@@ -1,0 +1,51 @@
+# sms-cimat-r-projects - R Environment Configuration
+# This file sets environment variables for R sessions
+
+# Project information
+PROJECT_NAME="sms-cimat-r-projects"
+PROJECT_SLUG="sms-cimat-r-projects"
+PROJECT_DESCRIPTION="A reproducible R environment for my R projects in the statistical methods specialization in the CIMAT"
+PROJECT_AUTHOR="IsaiasGutierrez"
+
+# R configuration
+R_VERSION="4.5.1"
+R_PROFILE_USER=".Rprofile"
+
+# renv configuration
+RENV_PATHS_CACHE="/home/rstudio/.local/share/renv"
+RENV_PATHS_CACHE_HOST="renv_cache"
+RENV_AUTOLOADER_ENABLED=TRUE
+RENV_ACTIVATE_PROJECT=TRUE
+
+# Package installation settings
+R_INSTALL_STAGED=FALSE
+R_COMPILE_AND_INSTALL_PACKAGES=interactive
+
+# Development settings
+R_KEEP_PKG_SOURCE=TRUE
+R_ENABLE_JIT=3
+
+# Parallel processing
+R_PARALLEL_CORES=4
+
+# Timezone
+TZ="UTC"
+
+# Language and locale
+LANG=en_US.UTF-8
+LC_ALL=en_US.UTF-8
+
+# Docker-specific settings
+DOCKER_CONTAINER=TRUE
+RUNNING_IN_DOCKER=TRUE
+
+# GitHub settings (if applicable)
+
+GITHUB_USERNAME="IsaiasGutierrezCruz"
+
+
+# Custom paths
+PATH_DATA="./data"
+PATH_OUTPUT="./output"
+PATH_SCRIPTS="./scripts"
+PATH_DOCS="./docs" 

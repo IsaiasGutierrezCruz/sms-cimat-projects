@@ -1,0 +1,231 @@
+---
+title: "sms-cimat-r-projects - Example Report"
+author: "IsaiasGutierrez"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: flatly
+    highlight: tango
+    toc: true
+    toc_float: true
+    code_folding: hide
+  pdf_document:
+    toc: true
+    number_sections: true
+params:
+  data_file: "example_data.csv"
+---
+
+```{r setup, include=FALSE}
+# Setup chunk
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 8,
+  fig.height = 6,
+  fig.align = "center",
+  cache = FALSE
+)
+
+# Load required libraries
+library(here)
+
+library(tidyverse)
+library(DT)
+
+
+library(plotly)
+
+```
+
+# Introduction
+
+This is an example R Markdown report for **sms-cimat-r-projects**.
+
+## Project Overview
+
+- **Project**: sms-cimat-r-projects
+- **Description**: A reproducible R environment for my R projects in the statistical methods specialization in the CIMAT
+- **Author**: IsaiasGutierrez
+- **R Version**: 4.5.1
+- **Report Generated**: `r Sys.Date()`
+
+# Data Loading and Preprocessing
+
+```{r data-loading}
+# Example data loading (uncomment when you have data)
+# data_path <- here("data", "raw", params$data_file)
+# if (file.exists(data_path)) {
+#   raw_data <- read.csv(data_path)
+# } else {
+#   # Create example data for demonstration
+#   raw_data <- data.frame(
+#     id = 1:100,
+#     value = rnorm(100, 50, 10),
+#     category = sample(c("A", "B", "C"), 100, replace = TRUE),
+#     date = seq(Sys.Date() - 99, Sys.Date(), by = "day")
+#   )
+# }
+
+# For demo purposes, create example data
+raw_data <- data.frame(
+  id = 1:100,
+  value = rnorm(100, 50, 10),
+  category = sample(c("A", "B", "C"), 100, replace = TRUE),
+  date = seq(Sys.Date() - 99, Sys.Date(), by = "day")
+)
+```
+
+
+```{r data-processing}
+# Data processing with tidyverse
+processed_data <- raw_data %>%
+  janitor::clean_names() %>%
+  dplyr::mutate(
+    value_scaled = scale(value)[, 1],
+    week = lubridate::week(date)
+  ) %>%
+  dplyr::filter(!is.na(value))
+
+# Summary statistics
+summary_stats <- processed_data %>%
+  dplyr::group_by(category) %>%
+  dplyr::summarise(
+    count = n(),
+    mean_value = mean(value, na.rm = TRUE),
+    sd_value = sd(value, na.rm = TRUE),
+    min_value = min(value, na.rm = TRUE),
+    max_value = max(value, na.rm = TRUE),
+    .groups = "drop"
+  )
+```
+
+
+# Exploratory Data Analysis
+
+## Summary Statistics
+
+```{r summary-table}
+
+# Interactive table with DT
+DT::datatable(
+  summary_stats,
+  options = list(
+    pageLength = 10,
+    scrollX = TRUE
+  ),
+  caption = "Summary Statistics by Category"
+) %>%
+  DT::formatRound(columns = c("mean_value", "sd_value"), digits = 2)
+
+```
+
+## Data Visualization
+
+```{r plots, fig.cap="Distribution of Values by Category"}
+
+# Create visualizations with ggplot2
+p1 <- ggplot(processed_data, aes(x = category, y = value, fill = category)) +
+  geom_boxplot(alpha = 0.7) +
+  geom_jitter(width = 0.2, alpha = 0.3) +
+  labs(
+    title = "Distribution of Values by Category",
+    x = "Category",
+    y = "Value",
+    fill = "Category"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+
+# Make interactive with plotly
+ggplotly(p1, tooltip = c("x", "y"))
+
+
+```
+
+```{r time-series, fig.cap="Time Series of Values"}
+
+# Time series plot
+p2 <- ggplot(processed_data, aes(x = date, y = value, color = category)) +
+  geom_line(alpha = 0.7) +
+  geom_smooth(method = "loess", se = FALSE) +
+  labs(
+    title = "Time Series of Values",
+    x = "Date",
+    y = "Value",
+    color = "Category"
+  ) +
+  theme_minimal()
+
+
+ggplotly(p2)
+
+
+```
+
+# Analysis Results
+
+## Key Findings
+
+1. **Data Overview**: The dataset contains `r nrow(raw_data)` observations across `r ncol(raw_data)` variables.
+
+
+2. **Category Distribution**: 
+   - Category A: `r summary_stats$count[summary_stats$category == "A"]` observations
+   - Category B: `r summary_stats$count[summary_stats$category == "B"]` observations  
+   - Category C: `r summary_stats$count[summary_stats$category == "C"]` observations
+
+3. **Value Statistics**:
+   - Overall mean: `r round(mean(processed_data$value), 2)`
+   - Overall standard deviation: `r round(sd(processed_data$value), 2)`
+   - Range: `r round(min(processed_data$value), 2)` to `r round(max(processed_data$value), 2)`
+
+
+## Statistical Tests
+
+```{r statistical-tests}
+
+# ANOVA test
+anova_result <- aov(value ~ category, data = processed_data)
+anova_summary <- summary(anova_result)
+
+# Extract p-value
+p_value <- anova_summary[[1]][["Pr(>F)"]][1]
+
+cat("ANOVA Results:\n")
+cat("F-statistic:", round(anova_summary[[1]][["F value"]][1], 4), "\n")
+cat("p-value:", round(p_value, 4), "\n")
+cat("Significant difference between categories:", ifelse(p_value < 0.05, "Yes", "No"), "\n")
+
+```
+
+# Conclusions
+
+This example report demonstrates:
+
+1. **Data Loading**: How to load and validate data files
+2. **Data Processing**: Basic data cleaning and transformation
+3. **Visualization**: Creating informative plots and charts
+4. **Analysis**: Performing statistical tests and interpreting results
+5. **Documentation**: Generating reproducible reports
+
+## Next Steps
+
+- [ ] Add more sophisticated analysis methods
+- [ ] Include additional visualizations
+- [ ] Implement model validation
+- [ ] Add cross-validation procedures
+- [ ] Create interactive dashboards
+
+# Session Information
+
+```{r session-info}
+# Display session information for reproducibility
+sessionInfo()
+```
+
+---
+
+*Report generated on `r Sys.Date()` using sms-cimat-r-projects template.* 
