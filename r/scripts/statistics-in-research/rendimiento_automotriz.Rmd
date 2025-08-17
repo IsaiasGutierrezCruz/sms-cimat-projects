@@ -552,4 +552,4 @@ El promedio de los vehículos del dataset es la siguiente:
 
 ## Código Fuentes
 
-Repositorio de Github: [Codigo](https://github.com/IsaiasGutierrez/statistics-in-research)
+Repositorio de Github: [Código](https://github.com/IsaiasGutierrezCruz/sms-cimat-projects/blob/main/r/scripts/statistics-in-research/rendimiento_automotriz.Rmd)
