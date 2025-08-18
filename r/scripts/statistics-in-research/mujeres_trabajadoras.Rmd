@@ -1,0 +1,641 @@
+---
+title: "Análisis de Mujeres Trabajadoras"
+author: "Abel Isaias Gutierrez Cruz"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: true
+    number_sections: true
+    fig_width: 8
+    fig_height: 5
+    keep_tex: false
+    latex_engine: pdflatex
+    extra_dependencies: ["amsmath", "amssymb"]
+  html_document:
+    theme: flatly
+    highlight: tango
+    toc: true
+    toc_float: true
+    code_folding: hide
+    df_print: paged
+params:
+  data_file: "mujeres_trabajadoras.xlsx"
+---
+
+```{r setup, include=FALSE}
+# Setup chunk
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 8,
+  fig.height = 5,
+  fig.align = "center",
+  cache = FALSE
+)
+
+# Load required libraries
+library(here)
+library(tidyverse)
+library(readxl)
+library(plotly)
+library(knitr)
+library(kableExtra)
+library(psych)
+library(janitor)
+
+```
+
+# Introducción
+
+Este análisis tiene como objetivo estudiar los factores que influyen en las mujeres casadas para participar en la fuerza laboral. La base de datos contiene 200 observaciones de mujeres y incluye variables relacionadas con el trabajo, características demográficas y familiares.
+
+**Variables del dataset:**
+
+- AÑOA: Si la esposa trabaja fuera del hogar en el año actual (1=sí, 0=no)
+- AÑOP: Si la esposa trabajó fuera del hogar el año previo (1=sí, 0=no) 
+- INGESP: Ingresos del esposo en miles de dólares
+- EDAD: Edad del respondiente en años
+- EDUC: Nivel de educación en años
+- RAZAN: Raza negra (1=negra, 0=no-negra)
+- NIÑ1: Niños menores de 2 años en el hogar (1=sí, 0=no)
+- NIÑ2: Niños entre 2 y 6 años en el hogar (1=sí, 0=no)
+
+```{r load-data, echo=FALSE}
+# Cargar los datos
+# data_path <- here::here("data", params$data_file)
+data_path <- here::here("data", "raw", "mujeres_trabajadoras.xlsx")
+
+# Verificar si el archivo existe
+if (!file.exists(data_path)) {
+  stop("El archivo de datos no fue encontrado en: ", data_path)
+}
+
+# Leer los datos
+mujeres_data <- readxl::read_excel(data_path)
+
+# Verificar estructura de los datos
+# only for development
+# str(mujeres_data)
+```
+
+```{r data-preparation, echo=FALSE}
+# Preparar los datos y asignar nombres apropiados
+nombres_columnas <- c("AÑOA", "AÑOP", "INGESP", "EDAD", "EDUC", "RAZAN", "NIÑ1", "NIÑ2")
+
+# Si las columnas no tienen nombres apropiados, asignarlos
+if (ncol(mujeres_data) == 8) {
+  colnames(mujeres_data) <- nombres_columnas
+}
+
+# Convertir variables categóricas a factores con etiquetas descriptivas
+mujeres_data <- mujeres_data %>%
+  mutate(
+    AÑOA_factor = factor(AÑOA, levels = c(0, 1), labels = c("No trabaja", "Trabaja")),
+    AÑOP_factor = factor(AÑOP, levels = c(0, 1), labels = c("No trabajó", "Trabajó")),
+    RAZAN_factor = factor(RAZAN, levels = c(0, 1), labels = c("No negra", "Negra")),
+    NIÑ1_factor = factor(NIÑ1, levels = c(0, 1), labels = c("No", "Sí")),
+    NIÑ2_factor = factor(NIÑ2, levels = c(0, 1), labels = c("No", "Sí"))
+  )
+```
+
+
+# Análisis de las Preguntas de Investigación
+
+## 1. Proporción de mujeres que no trabajaron ni al momento de la encuesta, ni el año anterior a la encuesta
+
+```{r question-1, echo=FALSE}
+# Calcular mujeres que no trabajaron en ninguno de los dos años
+no_trabaja_ninguno <- mujeres_data %>%
+  filter(AÑOA == 0 & AÑOP == 0) %>%
+  nrow()
+
+total_mujeres <- nrow(mujeres_data)
+proporcion_no_trabaja <- no_trabaja_ninguno / total_mujeres
+
+# Crear tabla de contingencia
+tabla_trabajo <- mujeres_data %>%
+  count(AÑOA_factor, AÑOP_factor) %>%
+  spread(AÑOP_factor, n, fill = 0) %>%
+  adorn_totals(c("row", "col"))
+```
+
+**Resultados:**
+
+- Número de mujeres que no trabajaron en ninguno de los dos años: `r no_trabaja_ninguno`
+- Proporción de mujeres que no trabajaron en ninguno de los dos años: `r round(proporcion_no_trabaja * 100, 2)`%
+
+```{r question-1-table, echo=FALSE}
+# Tabla de contingencia
+tabla_trabajo %>%
+  kable(
+    caption = "Distribución de trabajo actual vs año previo",
+    col.names = c("Año Actual", "No trabajó año previo", "Trabajó año previo", "Total")
+  ) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+Si analizamos la distribución de los patrones de trabajo de las mujeres, podemos ver que la mayoría de las mujeres trabajaron en ambos años.
+
+```{r viz-question-1, fig.width=7, fig.height=3, echo=FALSE}
+# Visualización de patrones de trabajo
+mujeres_data %>%
+  mutate(
+    patron_trabajo = case_when(
+      AÑOA == 0 & AÑOP == 0 ~ "No trabajó en ningún año",
+      AÑOA == 0 & AÑOP == 1 ~ "Solo trabajó año previo",
+      AÑOA == 1 & AÑOP == 0 ~ "Solo trabaja año actual",
+      AÑOA == 1 & AÑOP == 1 ~ "Trabajó ambos años"
+    )
+  ) %>%
+  count(patron_trabajo) %>%
+  mutate(proporcion = n / sum(n)) %>%
+  ggplot(aes(x = reorder(patron_trabajo, n), y = n, fill = patron_trabajo)) +
+  geom_col() +
+  geom_text(aes(label = paste0(n, "\n(", round(proporcion * 100, 1), "%)")), 
+            hjust = -0.1) +
+  coord_flip() +
+  labs(
+    title = "Patrones de Trabajo de las Mujeres",
+    subtitle = "Distribución por año actual vs año previo",
+    x = "Patrón de Trabajo",
+    y = "Número de Mujeres",
+    fill = "Patrón"
+  ) +
+  theme_minimal() +
+  # theme(legend.position = "none")
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 10),
+    plot.subtitle = element_text(hjust = 0.5, size = 8),
+    axis.text = element_text(size = 8),
+    axis.title = element_text(size = 9),
+    plot.margin = margin(0.5, 1, 0.5, 0.5, "cm"),
+    legend.position = "none"
+  )
+```
+
+## 2. Patron de comportamiento de los salarios del esposo, para mujeres que trabajan y para las que no trabajan
+
+```{r question-2, echo=FALSE}
+# Análisis de salarios del esposo por estatus laboral de la mujer
+salario_stats <- mujeres_data %>%
+  group_by(AÑOA_factor) %>%
+  summarise(
+    n = n(),
+    media = mean(INGESP, na.rm = TRUE),
+    mediana = median(INGESP, na.rm = TRUE),
+    desv_std = sd(INGESP, na.rm = TRUE),
+    min = min(INGESP, na.rm = TRUE),
+    max = max(INGESP, na.rm = TRUE),
+    q25 = quantile(INGESP, 0.25, na.rm = TRUE),
+    q75 = quantile(INGESP, 0.75, na.rm = TRUE)
+  )
+
+# Test estadístico
+t_test_salarios <- t.test(INGESP ~ AÑOA_factor, data = mujeres_data)
+```
+
+### Estadísticas descriptivas de ingresos del esposo
+
+```{r question-2-table, echo=FALSE}
+salario_stats %>%
+  kable(
+    caption = "Estadísticas de ingresos del esposo por estatus laboral de la mujer (en miles de USD)",
+    digits = 2
+  ) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+### Prueba estadística
+
+Se realizó una prueba t de Student para comparar los ingresos del esposo entre mujeres trabajadoras y no trabajadoras:
+
+- **Media para mujeres que no trabajan**: `r round(salario_stats$media[1], 2)` mil USD
+- **Media para mujeres que trabajan**: `r round(salario_stats$media[2], 2)` mil USD  
+- **Diferencia**: `r round(salario_stats$media[1] - salario_stats$media[2], 2)` mil USD
+- **Valor p**: `r round(t_test_salarios$p.value, 4)`
+- **Interpretación**: No existe diferencia estadísticamente significativa.
+
+Visualmente, si analizamos los box plots de los ingresos del esposo, podemos ver que el grupo de mujeres que no trabajan, tiene valores más altos que el grupo de mujeres que trabajan, sin embargo, estos valores son outliers. 
+
+Por otro lado, observando los histrogramas de los ingresos, no se observa una diferencia significativa entre los dos grupos. Ambos se encuentran sesgados a valores bajos. 
+
+Otro factor importante a considerar, es que la muestra la población de las mujeres que no trabajan, es significativamente menor. 
+
+```{r viz-question-2, echo=FALSE, fig.width=6, fig.height=4}
+# Visualización de distribución de salarios
+p1 <- mujeres_data %>%
+  ggplot(aes(x = AÑOA_factor, y = INGESP, fill = AÑOA_factor)) +
+  geom_boxplot(alpha = 0.7) +
+  geom_jitter(width = 0.2, alpha = 0.5) +
+  labs(
+    title = "Distribución de Ingresos del Esposo",
+    subtitle = "Por estatus laboral de la mujer",
+    x = "Estatus Laboral de la Mujer",
+    y = "Ingresos del Esposo (miles USD)",
+    fill = "Trabaja"
+  ) +
+  theme_minimal()
+
+p2 <- mujeres_data %>%
+  ggplot(aes(x = INGESP, fill = AÑOA_factor)) +
+  geom_histogram(alpha = 0.7, bins = 20, position = "identity") +
+  facet_wrap(~AÑOA_factor, ncol = 1) +
+  labs(
+    title = "Histograma de Ingresos del Esposo",
+    x = "Ingresos del Esposo (miles USD)",
+    y = "Frecuencia",
+    fill = "Trabaja"
+  ) +
+  theme_minimal()
+
+# Mostrar gráficos
+print(p1)
+print(p2)
+```
+
+## 3. Análisis de edad de las mujeres en la muestra
+
+```{r question-3, echo=FALSE}
+# Estadísticas descriptivas de edad
+edad_stats <- mujeres_data %>%
+  summarise(
+    n = n(),
+    media = mean(EDAD, na.rm = TRUE),
+    mediana = median(EDAD, na.rm = TRUE),
+    desv_std = sd(EDAD, na.rm = TRUE),
+    min = min(EDAD, na.rm = TRUE),
+    max = max(EDAD, na.rm = TRUE),
+    q25 = quantile(EDAD, 0.25, na.rm = TRUE),
+    q75 = quantile(EDAD, 0.75, na.rm = TRUE),
+    rango_intercuartil = q75 - q25
+  )
+
+# Distribución por grupos de edad
+grupos_edad <- mujeres_data %>%
+  mutate(
+    grupo_edad = case_when(
+      EDAD < 25 ~ "Menor de 25",
+      EDAD < 35 ~ "25-34",
+      EDAD < 45 ~ "35-44",
+      EDAD < 55 ~ "45-54",
+      TRUE ~ "55 o más"
+    )
+  ) %>%
+  count(grupo_edad) %>%
+  mutate(proporcion = n / sum(n))
+```
+
+### Características de edad de las mujeres en la muestra
+
+La edad de las mujeres en la muestra presenta las siguientes características:
+
+```{r question-3-table, echo=FALSE}
+edad_stats %>%
+  kable(
+    caption = "Estadísticas descriptivas de la edad de las mujeres",
+    digits = 2
+  ) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+### Distribución por grupos de edad
+
+En la muestra general, podemos observar que existe mayor población de mujeres entre los 25 y 44 años. 
+
+```{r question-3-groups, echo=FALSE}
+grupos_edad %>%
+  kable(
+    caption = "Distribución por grupos de edad",
+    col.names = c("Grupo de Edad", "n", "Proporción"),
+    digits = 3
+  ) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+```{r viz-question-3, echo=FALSE, fig.width=5, fig.height=3}
+# Visualización de distribución de edad
+p3 <- mujeres_data %>%
+  ggplot(aes(x = EDAD)) +
+  geom_histogram(aes(y = ..density..), bins = 15, fill = "steelblue", alpha = 0.7) +
+  geom_density(color = "red", size = 1) +
+  labs(
+    title = "Distribución de Edad de las Mujeres",
+    x = "Edad (años)",
+    y = "Densidad"
+  ) +
+  theme_minimal()
+print(p3)
+```
+
+Si segmentamos la muestra por estatus laboral, podemos observar que las mujeres que trabajan, tienden a tener una edad promedio más alta que las mujeres que no trabajan.
+
+```{r viz-question-3-2, echo=FALSE, fig.width=5, fig.height=3}
+# Visualización de distribución de edad
+p4 <- mujeres_data %>%
+  ggplot(aes(x = AÑOA_factor, y = EDAD, fill = AÑOA_factor)) +
+  geom_boxplot(alpha = 0.7) +
+  labs(
+    title = "Distribución de Edad por Estatus Laboral",
+    x = "Estatus Laboral",
+    y = "Edad (años)",
+    fill = "Trabaja"
+  ) +
+  theme_minimal()
+print(p4)
+```
+
+## 4. Análisis de las mujeres no trabajadoras, de acuerdo al nivel educativo
+
+```{r question-4, echo=FALSE}
+# Análisis de educación y trabajo
+educacion_trabajo <- mujeres_data %>%
+  mutate(
+    nivel_educativo = case_when(
+      EDUC <= 6 ~ "Primaria (<=6 años)",
+      EDUC <= 12 ~ "Secundaria (6-12 años)",
+      EDUC <= 16 ~ "Universitaria (13-16 años)",
+      TRUE ~ "Posgrado (>16 años)"
+    )
+  ) %>%
+  group_by(nivel_educativo) %>%
+  summarise(
+    total = n(),
+    no_trabaja = sum(AÑOA == 0),
+    trabaja = sum(AÑOA == 1),
+    prop_no_trabaja = no_trabaja / total,
+    prop_trabaja = trabaja / total
+  )
+
+# Test de asociación
+chi_test_educ <- chisq.test(mujeres_data$EDUC > median(mujeres_data$EDUC), mujeres_data$AÑOA)
+```
+
+### Análisis de educación y participación laboral
+
+Los resultados no muestran una clara relación entre el nivel educativo y la participación laboral femenina, mayoritariamente debido a que la muestra de la base de datos contiene un número significativo de mujeres con escolaridad secundaria. 
+Si se analizan las pocas observaciones en los que se tiene un nivel de posgrado, el 100 por ciento de los casos trabaja. Asimismo, algo similar pasa con las mujeres con nivel universitario. 
+
+```{r question-4-table, echo=FALSE}
+educacion_trabajo %>%
+  kable(
+    caption = "Proporción de trabajo por nivel educativo",
+    digits = 3
+  ) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+### Prueba de asociación estadística
+
+- **Test Chi-cuadrado** (educación alta vs baja): X² = `r round(chi_test_educ$statistic, 3)`, p = `r round(chi_test_educ$p.value, 4)`
+- **Interpretación**: `r ifelse(chi_test_educ$p.value < 0.05, "Existe asociación estadísticamente significativa", "No existe asociación estadísticamente significativa")` entre el nivel educativo y la probabilidad de trabajar.
+
+```{r viz-question-4, echo=FALSE, fig.width=5, fig.height=4}
+# Visualización de educación vs trabajo
+mujeres_data %>%
+  mutate(
+    nivel_educativo = case_when(
+      EDUC <= 6 ~ "Primaria (<=6 años)",
+      EDUC <= 12 ~ "Secundaria (6-12 años)",
+      EDUC <= 16 ~ "Universitaria (13-16 años)",
+      TRUE ~ "Posgrado (>16 años)"
+    )
+  ) %>%
+  ggplot(aes(x = nivel_educativo, fill = AÑOA_factor)) +
+  geom_bar(position = "fill") +
+  labs(
+    title = "Proporción de Trabajo por Nivel Educativo",
+    x = "Nivel Educativo",
+    y = "Proporción",
+    fill = "Estatus Laboral"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## 5. Mujeres trabajadoras con niños menores de 2 años vs mayores
+
+```{r question-5, echo=FALSE}
+# Análisis de niños y trabajo
+ninos_trabajo <- mujeres_data %>%
+  filter(AÑOA == 1) %>%  # Solo mujeres que trabajan
+  summarise(
+    total_trabajadoras = n(),
+    con_ninos_menores_2 = sum(NIÑ1 == 1),
+    con_ninos_2_6 = sum(NIÑ2 == 1),
+    prop_ninos_menores_2 = con_ninos_menores_2 / total_trabajadoras,
+    prop_ninos_2_6 = con_ninos_2_6 / total_trabajadoras
+  )
+
+# Tabla de contingencia detallada
+tabla_ninos <- mujeres_data %>%
+  count(AÑOA_factor, NIÑ1_factor, NIÑ2_factor) %>%
+  spread(AÑOA_factor, n, fill = 0)
+```
+
+### Análisis de mujeres trabajadoras con niños
+
+Entre las mujeres que trabajan, la distribución por presencia de niños es la siguiente:
+
+- **Total de mujeres trabajadoras**: `r ninos_trabajo$total_trabajadoras`
+- **Con niños menores de 2 años**: `r ninos_trabajo$con_ninos_menores_2` (`r round(ninos_trabajo$prop_ninos_menores_2 * 100, 1)`%)
+- **Con niños entre 2-6 años**: `r ninos_trabajo$con_ninos_2_6` (`r round(ninos_trabajo$prop_ninos_2_6 * 100, 1)`%)
+
+**Conclusión**: Hay `r ifelse(ninos_trabajo$con_ninos_menores_2 > ninos_trabajo$con_ninos_2_6, "más", "menos")` mujeres trabajadoras con niños menores de 2 años que con niños entre 2-6 años.
+
+
+### Distribución detallada por grupos de edad de niños
+
+```{r question-5-detailed, echo=FALSE}
+tabla_ninos %>%
+  kable(
+    caption = "Distribución de trabajo por presencia de niños en diferentes grupos de edad"
+  ) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+
+## 6. Proporción de trabajo por raza durante los dos años
+
+```{r question-6, echo=FALSE}
+# Análisis por raza - ambos años
+raza_trabajo <- mujeres_data %>%
+  group_by(RAZAN_factor) %>%
+  summarise(
+    total = n(),
+    # Trabajó en ambos años
+    ambos_anos = sum(AÑOA == 1 & AÑOP == 1),
+    prop_ambos_anos = ambos_anos / total,
+    # Trabajó al menos un año
+    al_menos_un_ano = sum(AÑOA == 1 | AÑOP == 1),
+    prop_al_menos_un_ano = al_menos_un_ano / total,
+    # No trabajó ningún año
+    ningun_ano = sum(AÑOA == 0 & AÑOP == 0),
+    prop_ningun_ano = ningun_ano / total
+  )
+
+# Test de asociación
+fisher_test_raza <- fisher.test(mujeres_data$RAZAN, mujeres_data$AÑOA)
+```
+
+### Análisis de patrones de trabajo por raza
+
+Los resultados muestran diferencias en los patrones laborales entre mujeres negras y no negras:
+
+#### Trabajo durante ambos años:
+- **Mujeres negras**: `r raza_trabajo$ambos_anos[2]` de `r raza_trabajo$total[2]` (`r round(raza_trabajo$prop_ambos_anos[2] * 100, 1)`%)
+- **Mujeres no negras**: `r raza_trabajo$ambos_anos[1]` de `r raza_trabajo$total[1]` (`r round(raza_trabajo$prop_ambos_anos[1] * 100, 1)`%)
+
+#### Trabajo en al menos un año:
+- **Mujeres negras**: `r round(raza_trabajo$prop_al_menos_un_ano[2] * 100, 1)`%
+- **Mujeres no negras**: `r round(raza_trabajo$prop_al_menos_un_ano[1] * 100, 1)`%
+
+```{r question-6-table, echo=FALSE}
+raza_trabajo %>%
+  select(RAZAN_factor, total, ambos_anos, prop_ambos_anos, al_menos_un_ano, prop_al_menos_un_ano) %>%
+  kable(
+    caption = "Patrones de trabajo por raza durante los dos años",
+    digits = 2,
+    col.names = c("Raza", "Total", "Trabajó ambos años", "Prop Trabajó ambos años", "Trabajó al menos un año", "Prop Trabajó al menos un año")
+  ) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"),  font_size = 8, latex_options = "scale_down")
+```
+
+
+En el caso de las mujeres negras, la proporcion que no trabajo en ambos años es notoriamente menor en comparación a las mujeres no negras. 
+
+```{r viz-question-6, echo=FALSE, fig.width=5, fig.height=3}
+# Visualización por raza
+mujeres_data %>%
+  mutate(
+    patron_trabajo = case_when(
+      AÑOA == 0 & AÑOP == 0 ~ "No trabajó ningún año",
+      AÑOA == 0 & AÑOP == 1 ~ "Solo año previo",
+      AÑOA == 1 & AÑOP == 0 ~ "Solo año actual",
+      AÑOA == 1 & AÑOP == 1 ~ "Ambos años"
+    )
+  ) %>%
+  ggplot(aes(x = RAZAN_factor, fill = patron_trabajo)) +
+  geom_bar(position = "fill") +
+  labs(
+    title = "Patrones de Trabajo por Raza",
+    x = "Raza",
+    y = "Proporción",
+    fill = "Patrón de Trabajo"
+  ) +
+  theme_minimal()
+```
+
+## 7. Características de las mujeres que trabajan
+
+```{r question-7, echo=FALSE}
+# Perfil comparativo de mujeres trabajadoras vs no trabajadoras
+perfil_trabajadoras <- mujeres_data %>%
+  group_by(AÑOA_factor) %>%
+  summarise(
+    n = n(),
+    edad_promedio = mean(EDAD, na.rm = TRUE),
+    educacion_promedio = mean(EDUC, na.rm = TRUE),
+    ingreso_esposo_promedio = mean(INGESP, na.rm = TRUE),
+    prop_raza_negra = mean(RAZAN, na.rm = TRUE),
+    prop_ninos_menores_2 = mean(NIÑ1, na.rm = TRUE),
+    prop_ninos_2_6 = mean(NIÑ2, na.rm = TRUE),
+    prop_trabajo_previo = mean(AÑOP, na.rm = TRUE)
+  )
+
+# Análisis de regresión logística
+modelo_logistico <- glm(AÑOA ~ EDAD + EDUC + INGESP + RAZAN + NIÑ1 + NIÑ2 + AÑOP, 
+                       data = mujeres_data, family = binomial)
+
+# Odds ratios
+odds_ratios <- exp(coef(modelo_logistico))
+ci_odds <- exp(confint(modelo_logistico))
+
+resultados_modelo <- data.frame(
+  Variable = names(odds_ratios),
+  Odds_Ratio = odds_ratios,
+  CI_Lower = ci_odds[,1],
+  CI_Upper = ci_odds[,2]
+) %>%
+  filter(Variable != "(Intercept)")
+```
+
+### Perfil comparativo de mujeres trabajadoras vs no trabajadoras
+
+Las características distintivas entre mujeres trabajadoras y no trabajadoras son:
+
+#### Mujeres que NO trabajan:
+- **Edad promedio**: `r round(perfil_trabajadoras$edad_promedio[1], 1)` años
+- **Educación promedio**: `r round(perfil_trabajadoras$educacion_promedio[1], 1)` años
+- **Ingreso del esposo**: `r round(perfil_trabajadoras$ingreso_esposo_promedio[1], 1)` mil USD
+- **Con niños menores de 2 años**: `r round(perfil_trabajadoras$prop_ninos_menores_2[1] * 100, 1)`%
+- **Trabajó año previo**: `r round(perfil_trabajadoras$prop_trabajo_previo[1] * 100, 1)`%
+
+#### Mujeres que SÍ trabajan:
+- **Edad promedio**: `r round(perfil_trabajadoras$edad_promedio[2], 1)` años
+- **Educación promedio**: `r round(perfil_trabajadoras$educacion_promedio[2], 1)` años
+- **Ingreso del esposo**: `r round(perfil_trabajadoras$ingreso_esposo_promedio[2], 1)` mil USD
+- **Con niños menores de 2 años**: `r round(perfil_trabajadoras$prop_ninos_menores_2[2] * 100, 1)`%
+- **Trabajó año previo**: `r round(perfil_trabajadoras$prop_trabajo_previo[2] * 100, 1)`%
+
+
+### Modelo de regresión logística
+
+Con el objetivo de identificar cuales son las varaibles que pueden explicar mejor la probabilidad de trabajar en el año actual, se realizó un modelo de regresión logística. 
+
+Los factores que mejor predicen la probabilidad de trabajar en el año actual son:
+
+```{r question-7-model, echo=FALSE}
+resultados_modelo %>%
+  kable(
+    caption = "Odds Ratios del modelo de regresión logística",
+    digits = 3
+  ) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+
+```{r viz-question-7, echo=FALSE, fig.width=7, fig.height=6}
+# Visualización del perfil de trabajadoras
+perfil_long <- perfil_trabajadoras %>%
+  select(-n) %>%
+  gather(variable, valor, -AÑOA_factor) %>%
+  mutate(
+    variable = case_when(
+      variable == "edad_promedio" ~ "Edad promedio",
+      variable == "educacion_promedio" ~ "Educación promedio",
+      variable == "ingreso_esposo_promedio" ~ "Ingreso esposo promedio",
+      variable == "prop_raza_negra" ~ "Proporción raza negra",
+      variable == "prop_ninos_menores_2" ~ "Prop. niños menores de 2 años",
+      variable == "prop_ninos_2_6" ~ "Prop. niños 2-6 años",
+      variable == "prop_trabajo_previo" ~ "Prop. trabajó año previo"
+    )
+  )
+
+perfil_long %>%
+  ggplot(aes(x = variable, y = valor, fill = AÑOA_factor)) +
+  geom_col(position = "dodge") +
+  labs(
+    title = "Perfil Comparativo de Mujeres",
+    subtitle = "Trabajadoras vs No Trabajadoras",
+    x = "Características",
+    y = "Valor",
+    fill = "Estatus Laboral"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+Como se puede observar tanto en la tabla 8 como en el gráfico de barras, la variable más diferenciadora es si trabajó en el año previo. 
+Si se trabaja en el año previo, la probabilidad de trabajar en el año actual es mayor. 
+Adicionalmente, las variables raza, edad y educación también juegan un papel importante. Sin embargo, el tamaño de la muestra no es suficiente para poder hacer un análisis más detallado y robusto.
+
+## Referencias
+
+Jobson, J.D. (1992). Applied Multivariate Data Analysis Volume II: Categorical and Multivariate Methods. Springer-Verlag.
+
+**Fuente de datos**: Sección de Estudios de Ingresos Dinámicos de la Universidad de Michigan.
+
+
+Repositorio de Github: [Código](https://github.com/IsaiasGutierrezCruz/sms-cimat-projects/blob/main/r/scripts/statistics-in-research/mujeres_trabajadoras.Rmd)
