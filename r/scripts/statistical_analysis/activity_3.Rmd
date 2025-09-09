@@ -1,0 +1,447 @@
+---
+title: "Actividad 3. Variables aleatorias continuas"
+author: "Abel Isaias Gutierrez Cruz"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: true
+    number_sections: true
+    fig_width: 8
+    fig_height: 5
+    keep_tex: false
+    latex_engine: pdflatex
+  html_document:
+    theme: flatly
+    highlight: tango
+    toc: true
+    toc_float: true
+    code_folding: hide
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+# Setup chunk
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 8,
+  fig.height = 5,
+  fig.align = "center",
+  cache = FALSE
+)
+
+# Load required libraries
+library(here)
+library(tidyverse)
+library(readxl)
+library(plotly)
+library(knitr)
+library(kableExtra)
+
+```
+
+
+## Pregunta 1. 
+
+Se sabe que la cantidad aleatoria demandada durante un cierto periodo de tiempo por parte de una empresa textil tiene distribución uniforme y que tiene a lo más la tonelada. Determinar para dicho periodo de tiempo:
+
+### Definición de la variable aleatoria
+
+Sea $X$ la variable aleatoria que denota la cantidad demandada (en kg) durante un cierto período de tiempo por parte de una empresa textil. 
+
+```{r definicion-parametros}
+a <- 0    # Límite inferior en kg 
+b <- 1000 # Límite superior en kg (1 tonelada)
+```
+
+Parámetros de la distribución:
+- Distribución: $X \sim \text{Uniforme}(a = `r a`, b = `r b`)$
+- Rango de la variable: $`r a` \leq X \leq `r b`$ kg
+
+### a) Probabilidad de que la cantidad demandada esté comprendida entre 800 kg. y 900 kg.
+
+**Evento de interés:**
+$$P(800 \leq X \leq 900)$$
+
+**Cálculo teórico:**
+Para una distribución uniforme continua $X \sim \text{Uniforme}(a, b)$, la función de densidad de probabilidad es:
+$$f(x) = \frac{1}{b-a} = \frac{1}{1000-0} = \frac{1}{1000}$$
+
+La probabilidad se calcula como:
+$$P(800 \leq X \leq 900) = \frac{900-800}{1000-0} = \frac{100}{1000} = 0.1$$
+
+**Cálculo usando R:**
+
+```{r pregunta-1a-calculo}
+# Probabilidad P(800 <= X <= 900)
+prob_a <- punif(900, min = a, max = b) - punif(800, min = a, max = b)
+prob_a_teorica <- (900-800)/(b-a)
+porcentaje_a <- round(prob_a * 100, 2)
+```
+
+```{r pregunta-1a-plot, fig.width=7, fig.height=4, echo=FALSE}
+x_seq <- seq(0, 1000, length.out = 1000)
+y_seq <- dunif(x_seq, min = a, max = b)
+
+plot(x_seq, y_seq, type = "l", lwd = 2, col = "blue",
+     xlab = "Demanda (kg)", ylab = "Densidad de probabilidad",
+     main = "Distribución Uniforme de la Demanda\nP(800 <= X <= 900)",
+     ylim = c(0, max(y_seq) * 1.2))
+
+# Sombrear el área de interés
+x_area <- seq(800, 900, length.out = 100)
+y_area <- dunif(x_area, min = a, max = b)
+polygon(c(800, x_area, 900), c(0, y_area, 0), 
+         col = rgb(1, 0, 0, 0.3), border = NA)
+
+# líneas verticales
+abline(v = c(800, 900), col = "red", lty = 2, lwd = 2)
+text(850, max(y_seq) * 0.6, paste("P =", round(prob_a, 3)), 
+     col = "red", font = 2, cex = 1.2)
+
+# etiquetas
+text(800, -max(y_seq) * 0.1, "800", col = "red", cex = 0.9)
+text(900, -max(y_seq) * 0.1, "900", col = "red", cex = 0.9)
+```
+
+**Resultados:**
+
+- Probabilidad teórica: $P(800 \leq X \leq 900) = `r prob_a_teorica`$
+- Probabilidad calculada con R: $P(800 \leq X \leq 900) = `r prob_a`$
+
+**Interpretación:**
+La probabilidad de que la cantidad demandada esté comprendida entre 800 kg y 900 kg es del `r porcentaje_a`%. Esto significa que en el `r porcentaje_a`% de los períodos de tiempo considerados, la empresa textil tendrá una demanda entre 800 y 900 kilogramos.
+
+## Pregunta 2.
+
+En una ciudad la temperatura máxima de cada uno de los días durante el mes de junio se comporta como una variable aleatoria normal con media 23°C y desviación estándar de 5°C.
+
+### Definición de la variable aleatoria
+
+Sea $Y$ la variable aleatoria que denota la temperatura máxima (en °C) de un día durante el mes de junio en una ciudad.
+
+```{r definicion-parametros-temp}
+# Parámetros de la distribución normal
+mu <- 23  
+sigma <- 5  
+```
+
+Parámetros de la distribución:
+
+- Distribución: $Y \sim N(\mu = `r mu`, \sigma^2 = `r sigma`^2)$
+- Media: $\mu = `r mu`^\circ C$
+- Desviación estándar: $\sigma = `r sigma` ^\circ C$
+- Varianza: $\sigma^2 = `r sigma^2`^\circ C^2$
+
+### a) ¿Cuál es la probabilidad de que en un día determinado la temperatura máxima se encuentre entre 21° y 27°?
+
+**Evento de interés:**
+$$P(21 \leq Y \leq 27)$$
+
+**Cálculo teórico:**
+Para una distribución normal $Y \sim N(\mu, \sigma^2)$, necesitamos estandarizar los valores:
+$$Z = \frac{Y - \mu}{\sigma}$$
+
+Los valores estandarizados son:
+
+- $z_1 = \frac{21 - 23}{5} = \frac{-2}{5} = -0.4$
+- $z_2 = \frac{27 - 23}{5} = \frac{4}{5} = 0.8$
+
+Por lo tanto:
+$$P(21 \leq Y \leq 27) = P(-0.4 \leq Z \leq 0.8) = \Phi(0.8) - \Phi(-0.4)$$
+
+**Cálculo usando R:**
+
+```{r pregunta-2a-calculo}
+# Probabilidad P(21 <= Y <= 27)
+prob_2a <- pnorm(27, mean = mu, sd = sigma) - pnorm(21, mean = mu, sd = sigma)
+
+# Utilizando distribución estándar
+z1 <- (21 - mu) / sigma
+z2 <- (27 - mu) / sigma
+
+prob_2a_estandar <- pnorm(z2) - pnorm(z1)
+
+porcentaje_2a <- round(prob_2a * 100, 2)
+```
+
+```{r pregunta-2a-plot, fig.width=7, fig.height=5, echo=FALSE}
+# Visualización de la distribución normal
+x_seq <- seq(mu - 4*sigma, mu + 4*sigma, length.out = 1000)
+y_seq <- dnorm(x_seq, mean = mu, sd = sigma)
+
+plot(x_seq, y_seq, type = "l", lwd = 2, col = "blue",
+     xlab = "Temperatura (°C)", ylab = "Densidad de probabilidad",
+     main = "Distribución Normal de la Temperatura Máxima\nP(21 <= Y <= 27)",
+     ylim = c(0, max(y_seq) * 1.2))
+
+# Sombrear el área de interés
+x_area <- seq(21, 27, length.out = 100)
+y_area <- dnorm(x_area, mean = mu, sd = sigma)
+polygon(c(21, x_area, 27), c(0, y_area, 0), 
+         col = rgb(0, 1, 0, 0.3), border = NA)
+
+# Líneas verticales
+abline(v = c(21, 27), col = "red", lty = 2, lwd = 2)
+abline(v = mu, col = "blue", lty = 1, lwd = 1)
+
+text(24, max(y_seq) * 0.6, paste("P =", round(prob_2a, 3)), 
+     col = "red", font = 2, cex = 1.2)
+text(21, -max(y_seq) * 0.1, "21°C", col = "red", cex = 0.9)
+text(27, -max(y_seq) * 0.1, "27°C", col = "red", cex = 0.9)
+text(mu, -max(y_seq) * 0.1, paste("μ =", mu, "°C"), col = "blue", cex = 0.9)
+```
+
+**Resultados:**
+
+- Valores estandarizados: $z_1 = `r z1`$, $z_2 = `r z2`$
+- Probabilidad calculada con R: $P(21 \leq Y \leq 27) = `r round(prob_2a, 4)`$
+- Probabilidad usando distribución estándar: $P(`r z1` \leq Z \leq `r z2`) = `r round(prob_2a_estandar, 4)`$
+
+**Interpretación:**
+La probabilidad de que en un día determinado la temperatura máxima se encuentre entre 21°C y 27°C es del `r porcentaje_2a`%. Esto significa que aproximadamente en `r porcentaje_2a` de cada 100 días durante el mes de junio, la temperatura máxima estará en este rango.
+
+
+### b) Calcular el número esperado de días del mes de junio en los que se espera alcanzar máximas entre 21° y 27°.
+
+**Cálculo del número esperado de días:**
+El mes de junio tiene 30 días. Si la probabilidad de que un día tenga temperatura entre 21°C y 27°C es `r round(prob_2a, 4)`, entonces el número esperado de días es:
+
+$$E[\text{Días}] = n \times P(21 \leq Y \leq 27) = 30 \times `r round(prob_2a, 4)`$$
+
+```{r pregunta-2b-calculo}
+# Número de días en junio
+dias_junio <- 30
+
+# Número esperado de días con temperatura entre 21° y 27°
+dias_esperados <- dias_junio * prob_2a
+dias_esperados_redondeado <- round(dias_esperados, 1)
+```
+
+
+**Resultados:**
+
+- Número de días en junio: `r dias_junio` días
+- Probabilidad por día: $P(21 \leq Y \leq 27) = `r round(prob_2a, 4)`$
+- Número esperado de días: $E[\text{Días}] = `r dias_junio` \times `r round(prob_2a, 4)` = `r dias_esperados_redondeado`$ días
+
+**Interpretación:**
+Se espera que aproximadamente `r dias_esperados_redondeado` días del mes de junio tengan una temperatura máxima entre 21°C y 27°C. Esto representa aproximadamente el `r round((dias_esperados/dias_junio)*100, 1)`% de los días del mes.
+
+
+## Pregunta 3.
+
+Se dispone de un sistema formado por dos componentes similares conectados en serie y que funcionan independientemente el uno del otro. Si el sistema se mantendrá en funcionamiento cuando ambos funcionen.
+
+### Definición de las variables aleatorias
+
+Sean $T_1$ y $T_2$ las variables aleatorias que denotan el tiempo de vida (en horas) de los componentes 1 y 2, respectivamente.
+
+```{r definicion-parametros-exp}
+# Parámetros de la distribución exponencial
+media_componente <- 5000  
+lambda <- 1 / media_componente  
+```
+
+Parámetros de la distribución:
+
+- Distribución: $T_1, T_2 \sim \text{Exponencial}(\lambda = `r lambda`)$
+- Media: $E[T_i] = \frac{1}{\lambda} = `r media_componente`$ horas
+- Parámetro de tasa: $\lambda = `r lambda`$ fallos por hora
+- Varianza: $\text{Var}(T_i) = \frac{1}{\lambda^2} = `r format(1/lambda^2, scientific = TRUE)`$ horas²
+
+**Características del sistema:**
+- Sistema en **serie**: funciona solo cuando **ambos** componentes funcionan
+- Componentes **independientes**: $T_1 \perp T_2$
+- Tiempo de vida del sistema: $T_{\text{sistema}} = \min(T_1, T_2)$
+
+### a) Si el tiempo de vida de cada componente se puede modelar a través de una variable aleatoria exponencial con media de 5,000 horas, ¿Cuál es la probabilidad de que el sistema esté al menos 10,000 horas en funcionamiento ininterrumpido?
+
+**Evento de interés:**
+$$P(T_{\text{sistema}} \geq 10000) = P(\min(T_1, T_2) \geq 10000)$$
+
+**Cálculo teórico:**
+Para que el sistema funcione al menos 10,000 horas, **ambos** componentes deben funcionar al menos 10,000 horas:
+$$P(\min(T_1, T_2) \geq 10000) = P(T_1 \geq 10000 \text{ y } T_2 \geq 10000)$$
+
+Dado que los componentes son independientes:
+$$P(T_1 \geq 10000 \text{ y } T_2 \geq 10000) = P(T_1 \geq 10000) \times P(T_2 \geq 10000)$$
+
+Para una distribución exponencial $T \sim \text{Exp}(\lambda)$:
+$$P(T \geq t) = e^{-\lambda t}$$
+
+Por lo tanto:
+$$P(T_i \geq 10000) = e^{-\lambda \times 10000} = e^{-`r lambda` \times 10000} = e^{-2}$$
+
+**Cálculo usando R:**
+
+```{r pregunta-3a-calculo}
+# Tiempo objetivo
+tiempo_objetivo <- 10000
+
+# Probabilidad de que un componente funcione al menos 10,000 horas
+prob_componente_10k <- 1 - pexp(tiempo_objetivo, rate = lambda)
+# Equivalente: prob_componente_10k <- exp(-lambda * tiempo_objetivo)
+
+# Probabilidad de que el sistema (ambos componentes) funcione al menos 10,000 horas
+prob_sistema_10k <- prob_componente_10k^2
+
+# Cálculo directo usando exponencial
+prob_componente_direct <- exp(-lambda * tiempo_objetivo)
+prob_sistema_direct <- prob_componente_direct^2
+
+porcentaje_3a <- round(prob_sistema_10k * 100, 4)
+```
+
+```{r pregunta-3a-plot, fig.width=8, fig.height=6, echo=FALSE}
+# Visualización de las distribuciones exponenciales
+t_seq <- seq(0, 20000, length.out = 1000)
+f_componente <- dexp(t_seq, rate = lambda)
+
+par(mfrow = c(2, 1), mar = c(4, 4, 3, 2))
+
+# Gráfico 1: Distribución de un componente
+plot(t_seq, f_componente, type = "l", lwd = 2, col = "blue",
+     xlab = "Tiempo (horas)", ylab = "Densidad de probabilidad",
+     main = "Distribución Exponencial - Tiempo de Vida de un Componente")
+
+# Sombrear área P(T >= 10000)
+t_area <- seq(tiempo_objetivo, 20000, length.out = 500)
+f_area <- dexp(t_area, rate = lambda)
+polygon(c(tiempo_objetivo, t_area, 20000), c(0, f_area, 0), 
+         col = rgb(1, 0, 0, 0.3), border = NA)
+
+abline(v = tiempo_objetivo, col = "red", lty = 2, lwd = 2)
+text(tiempo_objetivo + 2000, max(f_componente) * 0.6, 
+     paste("P(T >= 10000) =", round(prob_componente_10k, 4)), 
+     col = "red", font = 2, cex = 1)
+
+# Gráfico 2: Comparación sistema vs componente individual
+tiempos <- seq(0, 20000, by = 500)
+surv_componente <- 1 - pexp(tiempos, rate = lambda)
+surv_sistema <- surv_componente^2
+
+plot(tiempos, surv_componente, type = "l", lwd = 2, col = "blue",
+     xlab = "Tiempo (horas)", ylab = "Probabilidad de supervivencia",
+     main = "Función de Supervivencia: Componente vs Sistema",
+     ylim = c(0, 1))
+lines(tiempos, surv_sistema, lwd = 2, col = "red")
+
+abline(v = tiempo_objetivo, col = "gray", lty = 2)
+abline(h = prob_componente_10k, col = "blue", lty = 3)
+abline(h = prob_sistema_10k, col = "red", lty = 3)
+
+legend("topright", 
+       legend = c("Componente individual", "Sistema (serie)", "t = 10,000 h"),
+       col = c("blue", "red", "gray"),
+       lty = c(1, 1, 2),
+       lwd = c(2, 2, 1))
+
+par(mfrow = c(1, 1))
+```
+
+**Resultados:**
+
+- Probabilidad de que un componente funcione >= 10,000 h: $P(T_i \geq 10000) = e^{-2} = `r round(prob_componente_10k, 4)`$
+- Probabilidad de que el sistema funcione >= 10,000 h: $P(T_{\text{sistema}} \geq 10000) = [`r round(prob_componente_10k, 4)`]^2 = `r round(prob_sistema_10k, 4)`$
+
+**Interpretación:**
+La probabilidad de que el sistema esté al menos 10,000 horas en funcionamiento ininterrumpido es del `r porcentaje_3a`%. Esto es considerablemente menor que la probabilidad individual de cada componente (`r round(prob_componente_10k * 100, 2)`%) debido a que en un sistema en serie, el fallo de cualquier componente causa el fallo del sistema completo.
+
+### b) Supongamos que el sistema lleva ya 8,000 horas en funcionamiento, ¿Qué probabilidad hay de que exceda las 10,000 horas, es decir, que funcione al menos 2,000 horas más?
+
+**Evento de interés:**
+$$P(T_{\text{sistema}} \geq 10000 \mid T_{\text{sistema}} \geq 8000)$$
+
+**Cálculo teórico usando la propiedad de falta de memoria:**
+La distribución exponencial tiene la propiedad de **falta de memoria**:
+$$P(T \geq s + t \mid T \geq s) = P(T \geq t)$$
+
+Para nuestro caso:
+$$P(T_{\text{sistema}} \geq 10000 \mid T_{\text{sistema}} \geq 8000) = P(T_{\text{sistema}} \geq 2000)$$
+
+Esto significa que preguntar "¿cuál es la probabilidad de que dure 2,000 horas más?" es equivalente a preguntar "¿cuál es la probabilidad de que un sistema nuevo dure al menos 2,000 horas?"
+
+**Cálculo usando R:**
+
+```{r pregunta-3b-calculo}
+# Tiempo ya transcurrido y tiempo adicional necesario
+tiempo_transcurrido <- 8000
+tiempo_adicional <- 2000
+tiempo_total <- 10000
+
+# Usando la propiedad de falta de memoria
+# P(T_sistema >= 2000) para un sistema "nuevo"
+prob_componente_2k <- 1 - pexp(tiempo_adicional, rate = lambda)
+prob_sistema_2k <- prob_componente_2k^2
+
+# Verificación usando probabilidad condicional directa
+# P(T >= 10000 | T >= 8000) = P(T >= 10000 and T >= 8000) / P(T >= 8000)
+#                           = P(T >= 10000) / P(T >= 8000)
+prob_componente_8k <- 1 - pexp(tiempo_transcurrido, rate = lambda)
+prob_sistema_8k <- prob_componente_8k^2
+
+prob_condicional_verificacion <- prob_sistema_10k / prob_sistema_8k
+
+porcentaje_3b <- round(prob_sistema_2k * 100, 4)
+```
+
+```{r pregunta-3b-plot, fig.width=8, fig.height=5, echo=FALSE}
+# Visualización de la propiedad de falta de memoria
+t_seq <- seq(0, 15000, length.out = 1000)
+surv_componente <- 1 - pexp(t_seq, rate = lambda)
+surv_sistema <- surv_componente^2
+
+plot(t_seq, surv_sistema, type = "l", lwd = 3, col = "blue",
+     xlab = "Tiempo (horas)", ylab = "Probabilidad de supervivencia",
+     main = "Propiedad de Falta de Memoria\nSistema en Serie con Componentes Exponenciales")
+
+# Líneas verticales para los tiempos clave
+abline(v = tiempo_transcurrido, col = "green", lty = 2, lwd = 2)
+abline(v = tiempo_total, col = "red", lty = 2, lwd = 2)
+
+# Áreas de interés
+segments(tiempo_transcurrido, 0, tiempo_transcurrido, prob_sistema_8k, 
+         col = "green", lwd = 2)
+segments(tiempo_total, 0, tiempo_total, prob_sistema_10k, 
+         col = "red", lwd = 2)
+
+# Líneas horizontales
+abline(h = prob_sistema_8k, col = "green", lty = 3)
+abline(h = prob_sistema_10k, col = "red", lty = 3)
+
+# Anotaciones
+text(tiempo_transcurrido - 1000, prob_sistema_8k + 0.05, 
+     paste("t = 8000h\nP =", round(prob_sistema_8k, 3)), 
+     col = "green", font = 2, cex = 0.9)
+text(tiempo_total + 1000, prob_sistema_10k + 0.05, 
+     paste("t = 10000h\nP =", round(prob_sistema_10k, 3)), 
+     col = "red", font = 2, cex = 0.9)
+
+# Área que representa la probabilidad condicional
+x_cond <- seq(0, tiempo_adicional, length.out = 100)
+y_cond <- 1 - pexp(x_cond, rate = lambda)
+y_cond_sistema <- y_cond^2
+
+# Gráfico pequeño insertado mostrando la equivalencia
+par(fig = c(0.55, 0.95, 0.55, 0.95), new = TRUE)
+plot(x_cond, y_cond_sistema, type = "l", lwd = 2, col = "purple",
+     xlab = "Tiempo (h)", ylab = "P(supervivencia)",
+     main = "Sistema 'Nuevo'\n2000 horas", cex.main = 0.8)
+abline(v = tiempo_adicional, col = "purple", lty = 2)
+text(tiempo_adicional/2, max(y_cond_sistema)/2, 
+     paste("P =", round(prob_sistema_2k, 3)), 
+     col = "purple", font = 2, cex = 0.8)
+```
+
+**Resultados:**
+
+- Probabilidad usando falta de memoria: $P(T_{\text{sistema}} \geq 2000) = `r round(prob_sistema_2k, 4)`$
+- Verificación con probabilidad condicional: $\frac{P(T \geq 10000)}{P(T \geq 8000)} = \frac{`r round(prob_sistema_10k, 4)`}{`r round(prob_sistema_8k, 4)`} = `r round(prob_condicional_verificacion, 4)`$
+
+**Interpretación:**
+La probabilidad de que el sistema exceda las 10,000 horas dado que ya lleva 8,000 horas funcionando es del `r porcentaje_3b`%. 
+
+**Propiedad de falta de memoria:** Debido a que los componentes siguen una distribución exponencial, el sistema "no recuerda" el tiempo que ya ha estado funcionando. La probabilidad de durar 2,000 horas más es la misma que la probabilidad de que un sistema completamente nuevo dure 2,000 horas.
+
