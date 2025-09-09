@@ -1,0 +1,301 @@
+---
+title: "Actividad de la U2- Variables aleatorias discretas"
+author: "Abel Isaias Gutierrez Cruz"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: true
+    number_sections: true
+    fig_width: 8
+    fig_height: 5
+    keep_tex: false
+    latex_engine: pdflatex
+  html_document:
+    theme: flatly
+    highlight: tango
+    toc: true
+    toc_float: true
+    code_folding: hide
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+# Setup chunk
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 8,
+  fig.height = 5,
+  fig.align = "center",
+  cache = FALSE
+)
+
+# Load required libraries
+library(here)
+library(tidyverse)
+library(readxl)
+library(plotly)
+library(knitr)
+library(kableExtra)
+
+```
+
+
+## Pregunta 1. 
+
+Supongamos que en un departamento de control de calidad se examinan lotes de cuatro artículos y, se sabe que la probabilidad de que un artículo sea defectuoso es 0.10. Para un lote determinado, y asumiendo una variable aleatoria Binomial calcule:
+
+### Definición de la variable aleatoria
+
+```{r definicion-variables}
+n <- 4      
+p <- 0.10   
+```
+
+Parámetros:
+
+- $n = `r n`$ artículos
+- $p = `r p`$ (probabilidad de defecto)
+
+Variable aleatoria: $X \sim \text{Binomial}(n = `r n`, p = `r p`)$
+
+Donde $X$ representa el número de artículos defectuosos en un lote de `r n` artículos.
+
+
+### a) La probabilidad de no encontrar artículos defectuosos.
+
+Evento de interés: $X = 0$ (no encontrar artículos defectuosos)
+
+Probabilidad del evento: $P(X = 0)$
+
+```{r parte-a}
+# Cálculo de P(X = 0)
+prob_a <- dbinom(0, size = n, prob = p)
+
+# Verificación manual usando la fórmula binomial
+prob_a_manual <- choose(n, 0) * (p^0) * ((1-p)^(n-0))
+```
+
+**Resultado:** $P(X = 0) = `r round(prob_a, 4)`$ = `r round(prob_a * 100, 2)`%
+
+Verificación manual: $P(X = 0) = `r round(prob_a_manual, 4)`$
+
+**Interpretación:** La probabilidad de no encontrar artículos defectuosos en un lote de 4 artículos es de `r round(prob_a, 4)` (`r round(prob_a * 100, 2)`%). Esto significa que aproximadamente en `r round(prob_a * 100, 2)` de cada 100 lotes examinados, no se encontrará ningún artículo defectuoso. Esta es una probabilidad relativamente alta, lo cual es esperado dado que la probabilidad individual de defecto es baja (10%).
+
+### b) La probabilidad de obtener al menos 3 artículos defectuosos.
+
+Evento de interés: $X \geq 3$ (obtener al menos 3 artículos defectuosos)
+
+Probabilidad del evento: $P(X \geq 3) = P(X = 3) + P(X = 4)$
+
+```{r parte-b}
+# Cálculo de P(X >= 3) = P(X = 3) + P(X = 4)
+prob_x3 <- dbinom(3, size = n, prob = p)
+prob_x4 <- dbinom(4, size = n, prob = p)
+prob_b <- prob_x3 + prob_x4
+
+prob_b_direct <- pbinom(2, size = n, prob = p, lower.tail = FALSE)
+```
+
+**Resultado:** $P(X \geq 3) = P(X = 3) + P(X = 4) = `r round(prob_b, 6)`$ = `r round(prob_b * 100, 4)`%
+
+Verificaciones:
+- Método directo: $P(X \geq 3) = `r round(prob_b_direct, 6)`$
+
+**Interpretación:** La probabilidad de obtener al menos 3 artículos defectuosos en un lote de 4 artículos es de `r round(prob_b, 6)` (`r round(prob_b * 100, 4)`%). Esta es una probabilidad extremadamente baja, lo cual es esperado ya que encontrar 3 o 4 artículos defectuosos en un lote pequeño cuando la probabilidad individual de defecto es solo del 10% es un evento muy poco probable. 
+
+
+## Pregunta 2.
+
+El número de clientes que llega a un banco puede ser modelado como una variable aleatoria de Poisson. Si el número promedio es de 30 clientes por hora calcular:
+
+### Definición de la variable aleatoria
+
+```{r definicion-variables-poisson}
+lambda_hora <- 30    # promedio de clientes por hora
+lambda_minuto <- lambda_hora / 60  # promedio de clientes por minuto
+```
+
+Parámetros:
+
+- $\lambda = `r lambda_hora`$ clientes por hora
+- $\lambda = `r round(lambda_minuto, 2)`$ clientes por minuto
+
+Variable aleatoria para personas esperadas por hora: $X \sim \text{Poisson}(\lambda = `r lambda_hora`)$
+
+Variable aleatoria para personas esperadas por minuto: $Y \sim \text{Poisson}(\lambda = `r round(lambda_minuto, 2)`)$
+
+Donde $X$ representa el número de clientes que llegan al banco en una hora, y $Y$ representa el número de clientes que llegan en un minuto.
+
+### a) ¿La probabilidad de que lleguen 20 personas en una hora?
+
+Evento de interés: $X = 20$ (lleguen exactamente 20 clientes en una hora)
+
+Probabilidad del evento: $P(X = 20)$
+
+```{r parte-2a}
+# Cálculo de P(X = 20) para distribución Poisson
+prob_2a <- dpois(20, lambda = lambda_hora)
+```
+
+**Resultado:** $P(X = 20) = `r round(prob_2a, 4)`$ = `r round(prob_2a * 100, 2)`%
+
+**Interpretación:** La probabilidad de que lleguen exactamente 20 clientes en una hora es de `r round(prob_2a, 4)` (`r round(prob_2a * 100, 2)`%). Esta probabilidad es relativamente baja considerando que el promedio es de 30 clientes por hora. Esto es típico en distribuciones de Poisson donde la probabilidad de cualquier valor específico tiende a ser pequeña, especialmente cuando nos alejamos del valor esperado.
+
+### b) ¿La probabilidad de que en un minuto lleguen entre cinco y ocho clientes?
+
+Evento de interés: $5 \leq Y \leq 8$ (lleguen entre 5 y 8 clientes en un minuto)
+
+Probabilidad del evento: $P(5 \leq Y \leq 8) = P(Y = 5) + P(Y = 6) + P(Y = 7) + P(Y = 8)$
+
+```{r parte-2b}
+# Cálculo de P(5 <= Y <= 8) para distribución Poisson
+prob_y5 <- dpois(5, lambda = lambda_minuto)
+prob_y6 <- dpois(6, lambda = lambda_minuto)
+prob_y7 <- dpois(7, lambda = lambda_minuto)
+prob_y8 <- dpois(8, lambda = lambda_minuto)
+prob_2b <- prob_y5 + prob_y6 + prob_y7 + prob_y8
+
+# Método alternativo usando ppois
+prob_2b_alt <- ppois(8, lambda = lambda_minuto) - ppois(4, lambda = lambda_minuto)
+```
+
+
+**Resultado:** $P(5 \leq Y \leq 8) = `r round(prob_2b, 6)`$ = `r round(prob_2b * 100, 4)`%
+
+Verificación usando `ppois`: $P(5 \leq Y \leq 8) = `r round(prob_2b_alt, 6)`$
+
+**Interpretación:** La probabilidad de que lleguen entre 5 y 8 clientes en un minuto es de `r round(prob_2b, 6)` (`r round(prob_2b * 100, 4)`%). Esta es una probabilidad muy baja, lo cual tiene sentido ya que el promedio de llegadas por minuto es de solo `r round(lambda_minuto, 2)` clientes. Tener 5 o más clientes en un minuto representaría una actividad significativamente mayor al promedio esperado, por lo que es un evento poco probable.
+
+## Pregunta 3.
+
+Se realizó un estudio en la ciudad de México para conocer si el sedentarismo es un factor causal para el sobrepeso en 1000 personas adultas entre 25 y 65 años de edad.
+
+Se utilizó el índice de masa corporal (IMC) como clasificador de sobrepeso.
+
+La clasificación para sobrepeso es:
+
+-  Sin sobrepeso: $IMC \leq 25$
+- Con sobrepeso: $IMC > 25$
+
+La clasificación de sedentarismo es:
+
+- Sedentario: Si no realiza actividad física que provoque cambios en el ritmo cardiaco y respiratorio por más de 20 minutos tres veces por semana.
+- No sedentario: realiza actividad física por 20 minutos o más de tres veces por semana.
+
+### Tabla de contingencia original
+
+
+```{r tabla-contingencia, echo=FALSE}
+# Crear la tabla de contingencia con los datos del problema
+tabla_cont <- matrix(c(100, 200, 50, 650), 
+                     nrow = 2, byrow = TRUE,
+                     dimnames = list(
+                       "Sedentarismo" = c("Sedentario", "No sedentario"),
+                       "Sobrepeso" = c("Con sobrepeso", "Sin sobrepeso")
+                     ))
+
+# Agregar totales marginales
+tabla_completa <- addmargins(tabla_cont)
+```
+
+```{r core-variables}
+n_total <- 1000
+n_sed_sobrepeso <- 100
+n_sed_sin_sobrepeso <- 200
+n_no_sed_sobrepeso <- 50
+n_no_sed_sin_sobrepeso <- 650
+```
+
+```{r mostrar-tabla-contingencia, echo=FALSE}
+kable(tabla_completa, 
+      caption = "Tabla de contingencia: Sedentarismo vs Sobrepeso",
+      col.names = c("Con sobrepeso", "Sin sobrepeso", "Total")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+```
+
+### a) Tabla de probabilidad conjunta
+
+```{r probabilidad-conjunta}
+# Calculo de probabilidades
+prob_conjunta <- tabla_cont / n_total
+
+prob_completa <- addmargins(prob_conjunta)
+```
+
+```{r mostrar-prob-conjunta, echo=FALSE}
+prob_conjunta_formato <- round(prob_completa, 4)
+
+kable(prob_conjunta_formato, 
+      caption = "Tabla de probabilidad conjunta",
+      col.names = c("Con sobrepeso", "Sin sobrepeso", "Total")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+```
+
+Las probabilidades conjuntas son:
+
+- $P(\text{Sedentario} \cap \text{Con sobrepeso}) = `r round(prob_conjunta[1,1], 4)`$
+- $P(\text{Sedentario} \cap \text{Sin sobrepeso}) = `r round(prob_conjunta[1,2], 4)`$
+- $P(\text{No sedentario} \cap \text{Con sobrepeso}) = `r round(prob_conjunta[2,1], 4)`$
+- $P(\text{No sedentario} \cap \text{Sin sobrepeso}) = `r round(prob_conjunta[2,2], 4)`$
+
+### b) Probabilidad de que una persona sea sedentaria
+
+```{r prob-sedentario}
+# P(Sedentario) = suma de la primera fila
+prob_sedentario <- sum(tabla_cont[1, ]) / n_total
+```
+
+Evento de interés: Persona sedentaria
+
+Probabilidad del evento: $P(\text{Sedentario}) = `r round(prob_sedentario, 4)`$ = `r round(prob_sedentario * 100, 1)`%
+
+**Interpretación:** La probabilidad de que una persona seleccionada aleatoriamente sea sedentaria es de `r round(prob_sedentario, 4)` (`r round(prob_sedentario * 100, 1)`%). 
+
+### c) Probabilidad de que una persona tenga sobrepeso
+
+```{r prob-sobrepeso}
+# P(Con sobrepeso) = suma de la primera columna
+prob_sobrepeso <- sum(tabla_cont[, 1]) / n_total
+```
+
+Evento de interés: Persona con sobrepeso
+
+Probabilidad del evento: $P(\text{Con sobrepeso}) = `r round(prob_sobrepeso, 4)`$ = `r round(prob_sobrepeso * 100, 1)`%
+
+**Interpretación:** La probabilidad de que una persona seleccionada aleatoriamente tenga sobrepeso es de `r round(prob_sobrepeso, 4)` (`r round(prob_sobrepeso * 100, 1)`%). 
+
+
+### d) Probabilidad de sobrepeso dado que es sedentaria
+
+
+```{r prob-sobrepeso-dado-sedentario}
+# P(Con sobrepeso | Sedentario) = P(Con sobrepeso and Sedentario) / P(Sedentario)
+prob_sobrepeso_dado_sedentario <- tabla_cont[1, 1] / sum(tabla_cont[1, ])
+```
+
+Evento de interés: Sobrepeso dado sedentarismo
+
+Probabilidad del evento: $P(\text{Con sobrepeso}|\text{Sedentario}) = \frac{P(\text{Con sobrepeso} \cap \text{Sedentario})}{P(\text{Sedentario})} = \frac{`r tabla_cont[1,1]`/`r n_total`}{`r sum(tabla_cont[1,])`/`r n_total`} = `r round(prob_sobrepeso_dado_sedentario, 4)`$
+
+**Resultado:** $P(\text{Con sobrepeso}|\text{Sedentario}) = `r round(prob_sobrepeso_dado_sedentario, 4)`$ = `r round(prob_sobrepeso_dado_sedentario * 100, 1)`%
+
+**Interpretación:** La probabilidad de que una persona tenga sobrepeso dado que es sedentaria es de `r round(prob_sobrepeso_dado_sedentario, 4)` (`r round(prob_sobrepeso_dado_sedentario * 100, 1)`%). Esto significa que entre las personas sedentarias, el `r round(prob_sobrepeso_dado_sedentario * 100, 1)`% presenta sobrepeso.
+
+### e) Probabilidad de sobrepeso dado que no es sedentaria
+
+```{r prob-sobrepeso-dado-no-sedentario}
+# P(Con sobrepeso | No sedentario) = P(Con sobrepeso and No sedentario) / P(No sedentario)
+prob_sobrepeso_dado_no_sedentario <- tabla_cont[2, 1] / sum(tabla_cont[2, ])
+```
+
+Evento de interés: Sobrepeso dado no sedentarismo
+
+Probabilidad del evento: $P(\text{Con sobrepeso}|\text{No sedentario}) = \frac{P(\text{Con sobrepeso} \cap \text{No sedentario})}{P(\text{No sedentario})} = \frac{`r tabla_cont[2,1]`/`r n_total`}{`r sum(tabla_cont[2,])`/`r n_total`} = `r round(prob_sobrepeso_dado_no_sedentario, 4)`$
+
+**Resultado:** $P(\text{Con sobrepeso}|\text{No sedentario}) = `r round(prob_sobrepeso_dado_no_sedentario, 4)`$ = `r round(prob_sobrepeso_dado_no_sedentario * 100, 1)`%
+
+**Interpretación:** La probabilidad de que una persona tenga sobrepeso dado que no es sedentaria es de `r round(prob_sobrepeso_dado_no_sedentario, 4)` (`r round(prob_sobrepeso_dado_no_sedentario * 100, 1)`%). Esto significa que entre las personas no sedentarias, solo el `r round(prob_sobrepeso_dado_no_sedentario * 100, 1)`% presenta sobrepeso.
+
+
