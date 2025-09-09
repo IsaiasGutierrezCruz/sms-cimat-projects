@@ -252,6 +252,7 @@ Parámetros de la distribución:
 - Varianza: $\text{Var}(T_i) = \frac{1}{\lambda^2} = `r format(1/lambda^2, scientific = TRUE)`$ horas²
 
 **Características del sistema:**
+
 - Sistema en **serie**: funciona solo cuando **ambos** componentes funcionan
 - Componentes **independientes**: $T_1 \perp T_2$
 - Tiempo de vida del sistema: $T_{\text{sistema}} = \min(T_1, T_2)$
@@ -282,9 +283,7 @@ tiempo_objetivo <- 10000
 
 # Probabilidad de que un componente funcione al menos 10,000 horas
 prob_componente_10k <- 1 - pexp(tiempo_objetivo, rate = lambda)
-# Equivalente: prob_componente_10k <- exp(-lambda * tiempo_objetivo)
 
-# Probabilidad de que el sistema (ambos componentes) funcione al menos 10,000 horas
 prob_sistema_10k <- prob_componente_10k^2
 
 # Cálculo directo usando exponencial
@@ -294,52 +293,7 @@ prob_sistema_direct <- prob_componente_direct^2
 porcentaje_3a <- round(prob_sistema_10k * 100, 4)
 ```
 
-```{r pregunta-3a-plot, fig.width=8, fig.height=6, echo=FALSE}
-# Visualización de las distribuciones exponenciales
-t_seq <- seq(0, 20000, length.out = 1000)
-f_componente <- dexp(t_seq, rate = lambda)
 
-par(mfrow = c(2, 1), mar = c(4, 4, 3, 2))
-
-# Gráfico 1: Distribución de un componente
-plot(t_seq, f_componente, type = "l", lwd = 2, col = "blue",
-     xlab = "Tiempo (horas)", ylab = "Densidad de probabilidad",
-     main = "Distribución Exponencial - Tiempo de Vida de un Componente")
-
-# Sombrear área P(T >= 10000)
-t_area <- seq(tiempo_objetivo, 20000, length.out = 500)
-f_area <- dexp(t_area, rate = lambda)
-polygon(c(tiempo_objetivo, t_area, 20000), c(0, f_area, 0), 
-         col = rgb(1, 0, 0, 0.3), border = NA)
-
-abline(v = tiempo_objetivo, col = "red", lty = 2, lwd = 2)
-text(tiempo_objetivo + 2000, max(f_componente) * 0.6, 
-     paste("P(T >= 10000) =", round(prob_componente_10k, 4)), 
-     col = "red", font = 2, cex = 1)
-
-# Gráfico 2: Comparación sistema vs componente individual
-tiempos <- seq(0, 20000, by = 500)
-surv_componente <- 1 - pexp(tiempos, rate = lambda)
-surv_sistema <- surv_componente^2
-
-plot(tiempos, surv_componente, type = "l", lwd = 2, col = "blue",
-     xlab = "Tiempo (horas)", ylab = "Probabilidad de supervivencia",
-     main = "Función de Supervivencia: Componente vs Sistema",
-     ylim = c(0, 1))
-lines(tiempos, surv_sistema, lwd = 2, col = "red")
-
-abline(v = tiempo_objetivo, col = "gray", lty = 2)
-abline(h = prob_componente_10k, col = "blue", lty = 3)
-abline(h = prob_sistema_10k, col = "red", lty = 3)
-
-legend("topright", 
-       legend = c("Componente individual", "Sistema (serie)", "t = 10,000 h"),
-       col = c("blue", "red", "gray"),
-       lty = c(1, 1, 2),
-       lwd = c(2, 2, 1))
-
-par(mfrow = c(1, 1))
-```
 
 **Resultados:**
 
@@ -371,10 +325,10 @@ tiempo_transcurrido <- 8000
 tiempo_adicional <- 2000
 tiempo_total <- 10000
 
-# Usando la propiedad de falta de memoria
 # P(T_sistema >= 2000) para un sistema "nuevo"
 prob_componente_2k <- 1 - pexp(tiempo_adicional, rate = lambda)
 prob_sistema_2k <- prob_componente_2k^2
+
 
 # Verificación usando probabilidad condicional directa
 # P(T >= 10000 | T >= 8000) = P(T >= 10000 and T >= 8000) / P(T >= 8000)
@@ -387,53 +341,6 @@ prob_condicional_verificacion <- prob_sistema_10k / prob_sistema_8k
 porcentaje_3b <- round(prob_sistema_2k * 100, 4)
 ```
 
-```{r pregunta-3b-plot, fig.width=8, fig.height=5, echo=FALSE}
-# Visualización de la propiedad de falta de memoria
-t_seq <- seq(0, 15000, length.out = 1000)
-surv_componente <- 1 - pexp(t_seq, rate = lambda)
-surv_sistema <- surv_componente^2
-
-plot(t_seq, surv_sistema, type = "l", lwd = 3, col = "blue",
-     xlab = "Tiempo (horas)", ylab = "Probabilidad de supervivencia",
-     main = "Propiedad de Falta de Memoria\nSistema en Serie con Componentes Exponenciales")
-
-# Líneas verticales para los tiempos clave
-abline(v = tiempo_transcurrido, col = "green", lty = 2, lwd = 2)
-abline(v = tiempo_total, col = "red", lty = 2, lwd = 2)
-
-# Áreas de interés
-segments(tiempo_transcurrido, 0, tiempo_transcurrido, prob_sistema_8k, 
-         col = "green", lwd = 2)
-segments(tiempo_total, 0, tiempo_total, prob_sistema_10k, 
-         col = "red", lwd = 2)
-
-# Líneas horizontales
-abline(h = prob_sistema_8k, col = "green", lty = 3)
-abline(h = prob_sistema_10k, col = "red", lty = 3)
-
-# Anotaciones
-text(tiempo_transcurrido - 1000, prob_sistema_8k + 0.05, 
-     paste("t = 8000h\nP =", round(prob_sistema_8k, 3)), 
-     col = "green", font = 2, cex = 0.9)
-text(tiempo_total + 1000, prob_sistema_10k + 0.05, 
-     paste("t = 10000h\nP =", round(prob_sistema_10k, 3)), 
-     col = "red", font = 2, cex = 0.9)
-
-# Área que representa la probabilidad condicional
-x_cond <- seq(0, tiempo_adicional, length.out = 100)
-y_cond <- 1 - pexp(x_cond, rate = lambda)
-y_cond_sistema <- y_cond^2
-
-# Gráfico pequeño insertado mostrando la equivalencia
-par(fig = c(0.55, 0.95, 0.55, 0.95), new = TRUE)
-plot(x_cond, y_cond_sistema, type = "l", lwd = 2, col = "purple",
-     xlab = "Tiempo (h)", ylab = "P(supervivencia)",
-     main = "Sistema 'Nuevo'\n2000 horas", cex.main = 0.8)
-abline(v = tiempo_adicional, col = "purple", lty = 2)
-text(tiempo_adicional/2, max(y_cond_sistema)/2, 
-     paste("P =", round(prob_sistema_2k, 3)), 
-     col = "purple", font = 2, cex = 0.8)
-```
 
 **Resultados:**
 
@@ -443,5 +350,8 @@ text(tiempo_adicional/2, max(y_cond_sistema)/2,
 **Interpretación:**
 La probabilidad de que el sistema exceda las 10,000 horas dado que ya lleva 8,000 horas funcionando es del `r porcentaje_3b`%. 
 
-**Propiedad de falta de memoria:** Debido a que los componentes siguen una distribución exponencial, el sistema "no recuerda" el tiempo que ya ha estado funcionando. La probabilidad de durar 2,000 horas más es la misma que la probabilidad de que un sistema completamente nuevo dure 2,000 horas.
+
+## Source code
+
+- [Github](https://github.com/IsaiasGutierrezCruz/sms-cimat-projects/blob/main/r/scripts/statistical_analysis/activity_3.Rmd)
 
