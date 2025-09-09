@@ -299,3 +299,6 @@ Probabilidad del evento: $P(\text{Con sobrepeso}|\text{No sedentario}) = \frac{P
 **Interpretación:** La probabilidad de que una persona tenga sobrepeso dado que no es sedentaria es de `r round(prob_sobrepeso_dado_no_sedentario, 4)` (`r round(prob_sobrepeso_dado_no_sedentario * 100, 1)`%). Esto significa que entre las personas no sedentarias, solo el `r round(prob_sobrepeso_dado_no_sedentario * 100, 1)`% presenta sobrepeso.
 
 
+## Source code
+
+- [Github](https://github.com/IsaiasGutierrezCruz/sms-cimat-projects/blob/main/r/scripts/statistical_analysis/activity_2.Rmd)
