@@ -464,4 +464,337 @@ La probabilidad de que la proporción muestral de estudiantes con obesidad en un
 Esto significa que si tomáramos muchas muestras aleatorias de 800 estudiantes cada una, esperaríamos que aproximadamente **`r round(probabilidad_q3 * 100, 2)` de cada 100** muestras tengan una proporción de obesidad menor al 33%. Esta es una probabilidad muy alta, lo que indica que es muy probable que la proporción muestral sea menor al 33%, considerando que la proporción poblacional es del 30% y el tamaño de muestra es suficientemente grande para aplicar el Teorema del Límite Central.
 
 
+## Pregunta 4.
 
+Considerando el ejercicio 1 con $s^2 = 15 \text{grs}^2$ 
+
+
+### a) ¿Qué variable aleatoria conviene más para calcular la probabilidad del evento de interés?
+
+**Análisis de la situación:**
+
+En el ejercicio 1 teníamos:
+
+- $\mu = 565$ gramos (media poblacional)
+- $\sigma^2 = 15$ grs² (varianza poblacional conocida)
+- $n = 9$ latas
+- Evento de interés: $P(560 \leq \bar{X} \leq 568)$
+
+Ahora tenemos:
+
+- $\mu = 565$ gramos (media poblacional)
+- $s^2 = 15$ grs² (varianza muestral, no poblacional)
+- $n = 9$ latas
+- Mismo evento de interés: $P(560 \leq \bar{X} \leq 568)$
+
+**Variable aleatoria más conveniente:**
+
+Dado que ahora desconocemos la varianza poblacional $\sigma^2$ y solo tenemos la varianza muestral $s^2$, la variable aleatoria más conveniente es la **distribución t de Student**:
+
+$$T = \frac{\bar{X} - \mu}{s/\sqrt{n}} \sim t_{n-1}$$
+
+Donde:
+
+- $T$ sigue una distribución t de Student con $n-1 = 8$ grados de libertad
+- $s = \sqrt{15}$ grs (desviación estándar muestral)
+- $n = 9$ (tamaño de muestra)
+
+Esta es más apropiada que la distribución normal estándar porque estamos estimando la varianza poblacional a partir de la muestra.
+
+### b) Calcular la probabilidad del evento de interés
+
+**Definición de la variable aleatoria:**
+
+Variable aleatoria $X$ es el peso neto por lata de sopa (en gramos).
+
+$X \sim N(\mu = 565, \sigma^2 = \text{desconocida})$
+
+Para una muestra aleatoria de $n = 9$ latas con varianza muestral $s^2 = 15$, la variable aleatoria $T$ para la media muestral sigue una distribución t de Student:
+
+$$T = \frac{\bar{X} - \mu}{s/\sqrt{n}} \sim t_{8}$$
+
+**Probabilidad del evento de interés:**
+
+El evento de interés es que la media muestral esté entre 560 y 568 gramos: $(560 \leq \bar{X} \leq 568)$.
+
+La probabilidad que se debe calcular es:
+$$P(560 \leq \bar{X} \leq 568) = P\left(\frac{560 - 565}{s/\sqrt{9}} \leq T \leq \frac{568 - 565}{s/\sqrt{9}}\right)$$
+
+**Cálculo de la probabilidad usando R:**
+
+```{r pregunta4}
+# parametros del problema
+mu <- 565                    # poblacional
+s_squared <- 15              # varianza muestral
+s <- sqrt(s_squared)         # desviación estándar muestral
+n <- 9                       # tamaño de muestra
+gl_t <- n - 1               # grados de libertad para t
+
+limite_inferior <- 560
+limite_superior <- 568
+
+# error estándar de la media
+error_estandar <- s / sqrt(n)
+
+# transformación a t de Student
+t_inferior <- (limite_inferior - mu) / error_estandar
+t_superior <- (limite_superior - mu) / error_estandar
+
+# calculo de la probabilidad
+prob_t_superior <- pt(t_superior, df = gl_t)
+prob_t_inferior <- pt(t_inferior, df = gl_t)
+probabilidad_q4 <- prob_t_superior - prob_t_inferior
+```
+
+**Parámetros:**
+
+- $n = `r n`$ 
+- $\mu = `r mu`$ gramos
+- $s^2 = `r s_squared`$ grs²
+- $s = `r round(s, 4)`$ grs
+- Error estándar: $\frac{s}{\sqrt{n}} = `r round(error_estandar, 4)`$ grs
+- Grados de libertad: $gl = n - 1 = `r gl_t`$
+
+**Cálculo de probabilidades:**
+
+- $t_1 = \frac{560 - 565}{`r round(error_estandar, 4)`} = `r round(t_inferior, 4)`$
+- $t_2 = \frac{568 - 565}{`r round(error_estandar, 4)`} = `r round(t_superior, 4)`$
+- $P(T \leq `r round(t_superior, 4)`) = `r round(prob_t_superior, 6)`$
+- $P(T \leq `r round(t_inferior, 4)`) = `r round(prob_t_inferior, 6)`$
+- $P(560 \leq \bar{X} \leq 568) = `r round(probabilidad_q4, 6)`$
+- $P(560 \leq \bar{X} \leq 568) = `r round(probabilidad_q4 * 100, 2)`\%$
+
+**Visualización de la distribución:**
+
+```{r grafico_pregunta4, echo=FALSE, fig.width=7, fig.height=3}
+# crear datos para la distribución t
+x_values <- seq(-4, 4, length.out = 1000)
+df_dist <- data.frame(
+  x = x_values,
+  y = dt(x_values, df = gl_t)
+)
+
+# area sombreada 
+x_area <- seq(t_inferior, t_superior, length.out = 100)
+df_area <- data.frame(
+  x = x_area,
+  y = dt(x_area, df = gl_t)
+)
+
+p4 <- ggplot() +
+  geom_line(data = df_dist, aes(x = x, y = y), 
+            color = "blue", size = 1.2, alpha = 0.8) +
+  
+  # area de probabilidad
+  geom_area(data = df_area, aes(x = x, y = y), 
+            fill = "lightpink", alpha = 0.6, color = "purple", size = 0.5) +
+  
+  # indicadores verticales
+  geom_vline(xintercept = t_inferior, color = "red", 
+             linetype = "dashed", size = 1) +
+  geom_vline(xintercept = t_superior, color = "red", 
+             linetype = "dashed", size = 1) +
+  geom_vline(xintercept = 0, color = "black", 
+             linetype = "solid", size = 0.8, alpha = 0.7) +
+  
+  # etiquetas
+  annotate("text", x = t_inferior, y = max(df_dist$y) * 0.1, 
+           label = round(t_inferior, 2), color = "red", size = 4, fontface = "bold") +
+  annotate("text", x = t_superior, y = max(df_dist$y) * 0.1, 
+           label = round(t_superior, 2), color = "red", size = 4, fontface = "bold") +
+  annotate("text", x = 0, y = max(df_dist$y) * 0.95, 
+           label = "t = 0", color = "black", size = 4) +
+  annotate("text", x = 0, y = max(df_dist$y) * 0.5, 
+           label = paste("P =", round(probabilidad_q4, 4)), 
+           color = "darkmagenta", size = 5, fontface = "bold") +
+  
+  labs(
+    title = expression(paste("Distribución t de Student con 8 grados de libertad")),
+    x = "Valores de t",
+    y = "Densidad"
+  ) +
+  
+  # tema
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10),
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_line()
+  ) +
+  
+  # escalas
+  scale_x_continuous(breaks = seq(-4, 4, 1)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, max(df_dist$y) * 1.1))
+
+# Mostrar el gráfico
+print(p4)
+```
+
+**Interpretación del resultado:**
+
+La probabilidad de que la media muestral del peso de 9 latas de sopa esté entre 560 y 568 gramos, cuando la varianza muestral es $s^2 = 15$ grs², es de **`r round(probabilidad_q4 * 100, 2)`%** (aproximadamente **`r round(probabilidad_q4, 4)`**).
+
+Comparación con la pregunta 1:
+
+- En la pregunta 1 (con $\sigma^2$ conocida): usamos distribución normal y obtuvimos una probabilidad muy alta (~99.89%)
+- En esta pregunta (con $s^2$ muestral): usamos distribución t de Student y obtenemos **`r round(probabilidad_q4 * 100, 2)`%**
+
+La diferencia se debe a que la distribución t de Student tiene mayor variabilidad que la normal estándar, especialmente con pocos grados de libertad (n-1 = 8), lo que refleja la incertidumbre adicional por no conocer la varianza poblacional y tener que estimarla a partir de la muestra.
+
+
+
+## Pregunta 5. 
+
+Un ingeniero agrónomo tiene dos variedades de maíz bajo investigación, $op123$ y $ro23$. Con base al tiempo que el agrónomo tiene estudiando a ambas variedades asegura que la variedad $op123$ tiene mejor rendimiento promedio que la variedad $ro23$. Las variedades tienen sus pequeñas diferencias, pero no lo suficientemente grandes como para considerarlas diferentes. Si el agrónomo obtuviera una muestra aleatoria del rendimiento de $10$ parcelas para la variedad $op123$ y una muestra aleatoria del rendimiento de 15 parcelas para la variedad $ro23$
+
+
+###  a) ¿Cuál es la probabilidad de que la razón de varianzas ($S^2_{op123}/S^2_{ro23}$) sea menor a 0.5? Antes de contestar la pregunta anterior medite lo siguiente: bajo las consideraciones del agrónomo ¿cómo cree que será la probabilidad calculada de la pregunta anterior? Alta (probabilidad igual o mayor 0.8, mediana (probabilidad entre 0.3 y 0.8, sin tocar a estos) o pequeña (probabilidad entre 0 y 0.3).
+
+#### Reflexión previa sobre la probabilidad esperada
+
+
+Considerando el siguiente fragmento de la descripción del problema "Las variedades tienen sus pequeñas diferencias, pero no lo suficientemente grandes como para considerarlas diferentes." se puede asumir que las varianzas poblacionales son similares. $\sigma^2_{op123} \approx \sigma^2_{ro23}$
+
+Si las varianzas poblacionales son iguales, esperaríamos que la razón $S^2_{op123}/S^2_{ro23}$ se distribuya alrededor de 1.0. Una razón menor a 0.5 implicaría que la varianza de $op123$ es menos de la mitad que la de $ro23$, lo cual sería una diferencia considerable.
+
+**Predicción:** Dado que las variedades son similares, esperamos una probabilidad **pequeña** (entre 0 y 0.3) para el evento $P(S^2_{op123}/S^2_{ro23} < 0.5)$.
+
+#### Resolución
+
+**Definición de la variable aleatoria:**
+
+Sean $X_{op123}$ y $X_{ro23}$ las variables aleatorias que representan los rendimientos de las variedades op123 y ro23 respectivamente.
+
+Asumiendo que ambas siguen distribuciones normales:
+
+- $X_{op123} \sim N(\mu_1, \sigma^2_1)$
+- $X_{ro23} \sim N(\mu_2, \sigma^2_2)$
+
+Para muestras de tamaños $n_1 = 10$ y $n_2 = 15$, con varianzas muestrales $S^2_{op123}$ y $S^2_{ro23}$, la razón de varianzas sigue una distribución F:
+
+$$F = \frac{S^2_{op123}/\sigma^2_1}{S^2_{ro23}/\sigma^2_2} \sim F_{n_1-1, n_2-1}$$
+
+Bajo la hipótesis de igualdad de varianzas ($\sigma^2_1 = \sigma^2_2$):
+$$F = \frac{S^2_{op123}}{S^2_{ro23}} \sim F_{9, 14}$$
+
+**Probabilidad del evento de interés:**
+
+El evento de interés es que la razón de varianzas sea menor a 0.5: $(S^2_{op123}/S^2_{ro23} < 0.5)$.
+
+La probabilidad que se debe calcular es:
+$$P\left(\frac{S^2_{op123}}{S^2_{ro23}} < 0.5\right) = P(F_{9,14} < 0.5)$$
+
+**Cálculo de la probabilidad usando R:**
+
+```{r pregunta5a}
+# parametros del problema
+n1 <- 10                    # tamaño de muestra op123
+n2 <- 15                    # tamaño de muestra ro23
+gl1 <- n1 - 1              # grados de libertad numerador
+gl2 <- n2 - 1              # grados de libertad denominador
+razon_critica <- 0.5       # valor crítico
+
+# calculo de la probabilidad
+probabilidad_q5 <- pf(razon_critica, df1 = gl1, df2 = gl2)
+
+# estadísticos descriptivos de la distribución F
+media_f <- gl2 / (gl2 - 2)  # media de F (para gl2 > 2)
+```
+
+**Parámetros:**
+
+- $n_1 = `r n1`$ (muestra op123)
+- $n_2 = `r n2`$ (muestra ro23)
+- Grados de libertad: $gl_1 = `r gl1`, gl_2 = `r gl2`$
+- Valor crítico: $F = `r razon_critica`$
+- Media teórica de $F_{9,14}$: $\frac{14}{14-2} = `r round(media_f, 4)`$
+
+**Cálculo de probabilidades:**
+
+- $P(F_{9,14} < 0.5) = `r round(probabilidad_q5, 6)`$
+- $P(S^2_{op123}/S^2_{ro23} < 0.5) = `r round(probabilidad_q5 * 100, 2)`\%$
+
+**Visualización de la distribución:**
+
+```{r grafico_pregunta5a, echo=FALSE, fig.width=7, fig.height=3}
+# crear datos para la distribución F
+x_values <- seq(0, 4, length.out = 1000)
+df_dist <- data.frame(
+  x = x_values,
+  y = df(x_values, df1 = gl1, df2 = gl2)
+)
+
+# area sombreada 
+x_area <- seq(0, razon_critica, length.out = 100)
+df_area <- data.frame(
+  x = x_area,
+  y = df(x_area, df1 = gl1, df2 = gl2)
+)
+
+p5 <- ggplot() +
+  geom_line(data = df_dist, aes(x = x, y = y), 
+            color = "blue", size = 1.2, alpha = 0.8) +
+  
+  # area de probabilidad
+  geom_area(data = df_area, aes(x = x, y = y), 
+            fill = "lightyellow", alpha = 0.6, color = "orange", size = 0.5) +
+  
+  # indicadores verticales
+  geom_vline(xintercept = razon_critica, color = "red", 
+             linetype = "dashed", size = 1) +
+  geom_vline(xintercept = 1, color = "black", 
+             linetype = "solid", size = 0.8, alpha = 0.7) +
+  geom_vline(xintercept = media_f, color = "darkgreen", 
+             linetype = "dotted", size = 1, alpha = 0.8) +
+  
+  # etiquetas
+  annotate("text", x = razon_critica, y = max(df_dist$y) * 0.1, 
+           label = "0.5", color = "red", size = 4, fontface = "bold") +
+  annotate("text", x = 1, y = max(df_dist$y) * 0.9, 
+           label = "F = 1", color = "black", size = 4) +
+  annotate("text", x = media_f + 0.1, y = max(df_dist$y) * 0.7, 
+           label = paste("Media =", round(media_f, 2)), 
+           color = "darkgreen", size = 3.5, angle = 90) +
+  annotate("text", x = 0.25, y = max(df_dist$y) * 0.4, 
+           label = paste("P =", round(probabilidad_q5, 4)), 
+           color = "darkorange", size = 5, fontface = "bold") +
+  
+  labs(
+    title = expression(paste("Distribución F(9,14) para razón de varianzas")),
+    x = expression(paste("F = ", S[op123]^2, "/", S[ro23]^2)),
+    y = "Densidad"
+  ) +
+  
+  # tema
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10),
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_line()
+  ) +
+  
+  # escalas
+  scale_x_continuous(breaks = seq(0, 4, 0.5), limits = c(0, 3.5)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, max(df_dist$y) * 1.1))
+
+# Mostrar el gráfico
+print(p5)
+```
+
+**Interpretación del resultado:**
+
+La probabilidad de que la razón de varianzas $S^2_{op123}/S^2_{ro23}$ sea menor a 0.5 es de **`r round(probabilidad_q5 * 100, 2)`%** (aproximadamente **`r round(probabilidad_q5, 4)`**).
+
+
+**Predicción confirmada**: Como esperábamos, la probabilidad es **pequeña** (`r round(probabilidad_q5 * 100, 2)`% < 30%), lo cual es consistente con la afirmación del agrónomo de que las variedades tienen diferencias pequeñas.
+
+
+
+
+## Source code
+
+- [Github](https://github.com/IsaiasGutierrezCruz/sms-cimat-projects/blob/main/r/scripts/statistical_analysis/activity_4.Rmd)
