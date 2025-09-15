@@ -1,0 +1,467 @@
+---
+title: "Actividad 4. Distribuciones muestrales"
+author: "Abel Isaias Gutierrez Cruz"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: true
+    number_sections: true
+    fig_width: 8
+    fig_height: 5
+    keep_tex: false
+    latex_engine: pdflatex
+  html_document:
+    theme: flatly
+    highlight: tango
+    toc: true
+    toc_float: true
+    code_folding: hide
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+# Setup chunk
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 8,
+  fig.height = 5,
+  fig.align = "center",
+  cache = FALSE
+)
+
+# Load required libraries
+library(here)
+library(tidyverse)
+library(readxl)
+library(plotly)
+library(knitr)
+library(kableExtra)
+library(ggplot2)
+
+```
+
+
+## Pregunta 1. 
+
+Suponga que el peso neto por lata en una marca de sopa tiene una $\mu$ = 565 gramos y $\sigma$ 2 = 15 $grs^2$. Suponiendo que la distribución de los pesos se asemeja a una distribución normal.
+
+### a) Si se toma una muestra aleatoria de 9 latas y se registra el peso ¿cuál es la probabilidad de que la media muestral esté entre 560 y 568 gramos?
+
+**Definición de la variable aleatoria:**
+
+Variable aleatoria $X$ es el peso neto por lata de sopa (en gramos).
+
+$X \sim N(\mu = 565, \sigma^2 = 15)$, donde $\sigma = \sqrt{15}$
+
+Para una muestra aleatoria de $n = 9$ latas, la variable aleatoria $\bar{X}$ denota la media muestral del peso de las latas. La distribución muestral de $\bar{X}$ sigue una distribución normal:
+
+$$\bar{X} \sim N\left(\mu_{\bar{X}} = 565, \sigma_{\bar{X}}^2 = \frac{\sigma^2}{n} = \frac{15}{9} = \frac{5}{3}\right)$$
+
+Por lo tanto: $\bar{X} \sim N\left(565, \frac{5}{3}\right)$, donde $\sigma_{\bar{X}} = \sqrt{\frac{5}{3}}$.
+
+**Probabilidad del evento de interés:**
+
+El evento de interés es que la media muestral esté entre 560 y 568 gramos: $(560 \leq \bar{X} \leq 568)$.
+
+La probabilidad que deberemos calcular es:
+$$P(560 \leq \bar{X} \leq 568) = P(\bar{X} \leq 568) - P(\bar{X} \leq 560)$$
+
+**Cálculo de la probabilidad usando R:**
+
+```{r pregunta1a}
+# Parámetros del problema
+mu <- 565                    # poblacional
+sigma_squared <- 15          # poblacional
+sigma <- sqrt(sigma_squared) # poblacional
+n <- 9                       # muestra
+
+# Parámetros de la distribución muestral 
+mu_x_bar <- mu                           
+sigma_x_bar_squared <- sigma_squared / n 
+sigma_x_bar <- sqrt(sigma_x_bar_squared) 
+
+limite_inferior <- 560
+limite_superior <- 568
+
+# Cálculo de la probabilidad
+prob_menor_568 <- pnorm(limite_superior, mean = mu_x_bar, sd = sigma_x_bar)
+prob_menor_560 <- pnorm(limite_inferior, mean = mu_x_bar, sd = sigma_x_bar)
+prob_entre_560_568 <- prob_menor_568 - prob_menor_560
+
+# Verificación usando estandarización
+z_560 <- (limite_inferior - mu_x_bar) / sigma_x_bar
+z_568 <- (limite_superior - mu_x_bar) / sigma_x_bar
+prob_verificacion <- pnorm(z_568) - pnorm(z_560)
+```
+
+**Parámetros de la distribución muestral de $\bar{X}$:**
+
+- $\mu_{\bar{X}} = `r mu_x_bar`$ gramos
+- $\sigma^2_{\bar{X}} = `r sigma_x_bar_squared`$ $\text{gramos}^2$
+- $\sigma_{\bar{X}} = `r round(sigma_x_bar, 4)`$ gramos
+
+**Cálculo de probabilidades:**
+
+- $P(\bar{X} \leq 568) = `r round(prob_menor_568, 6)`$
+- $P(\bar{X} \leq 560) = `r round(prob_menor_560, 6)`$  
+- $P(560 \leq \bar{X} \leq 568) = `r round(prob_entre_560_568, 6)`$
+- $P(560 \leq \bar{X} \leq 568) = `r round(prob_entre_560_568 * 100, 2)`\%$
+
+**Verificación usando estandarización:**
+
+- $Z_1 = \frac{560 - 565}{1.291} = `r round(z_560, 4)`$
+- $Z_2 = \frac{568 - 565}{1.291} = `r round(z_568, 4)`$  
+- $P(`r round(z_560, 3)` \leq Z \leq `r round(z_568, 3)`) = `r round(prob_verificacion, 6)`$
+
+**Visualización de la distribución:**
+
+```{r grafico_pregunta1a, echo=FALSE, fig.width=7, fig.height=3}
+# Crear datos para la distribución
+x_values <- seq(mu_x_bar - 4*sigma_x_bar, mu_x_bar + 4*sigma_x_bar, length.out = 1000)
+df_dist <- data.frame(
+  x = x_values,
+  y = dnorm(x_values, mean = mu_x_bar, sd = sigma_x_bar)
+)
+
+# Crear datos para el área sombreada
+x_area <- seq(limite_inferior, limite_superior, length.out = 100)
+df_area <- data.frame(
+  x = x_area,
+  y = dnorm(x_area, mean = mu_x_bar, sd = sigma_x_bar)
+)
+
+
+p <- ggplot() +
+  geom_line(data = df_dist, aes(x = x, y = y), 
+            color = "blue", size = 1.2, alpha = 0.8) +
+  
+  # area 
+  geom_area(data = df_area, aes(x = x, y = y), 
+            fill = "lightblue", alpha = 0.6, color = "blue", size = 0.5) +
+  
+  # indicadores verticales
+  geom_vline(xintercept = limite_inferior, color = "red", 
+             linetype = "dashed", size = 1) +
+  geom_vline(xintercept = limite_superior, color = "red", 
+             linetype = "dashed", size = 1) +
+  geom_vline(xintercept = mu_x_bar, color = "black", 
+             linetype = "solid", size = 0.8, alpha = 0.7) +
+  
+  # etiquetas
+  annotate("text", x = limite_inferior, y = max(df_dist$y) * 0.1, 
+           label = "560", color = "red", size = 4, fontface = "bold") +
+  annotate("text", x = limite_superior, y = max(df_dist$y) * 0.1, 
+           label = "568", color = "red", size = 4, fontface = "bold") +
+  annotate("text", x = mu_x_bar, y = max(df_dist$y) * 0.95, 
+           label = "mu = 565", color = "black", size = 4) +
+  annotate("text", x = (limite_inferior + limite_superior)/2, 
+           y = max(df_dist$y) * 0.5, 
+           label = paste("P =", round(prob_entre_560_568, 4)), 
+           color = "darkblue", size = 5, fontface = "bold") +
+  
+  labs(
+    title = expression(paste("Distribución muestral de ", bar(X), " ~ N(565, 5/3)")),
+    x = "Media muestral (gramos)",
+    y = "Densidad"
+  ) +
+  
+  # tema
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10),
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_line()
+  ) +
+  
+  # escalas
+  scale_x_continuous(breaks = seq(560, 570, 2)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, max(df_dist$y) * 1.1))
+
+# Mostrar el gráfico
+print(p)
+```
+
+**Interpretación del resultado:**
+
+La probabilidad de que la media muestral del peso de 9 latas de sopa esté entre 560 y 568 gramos es de **`r round(prob_entre_560_568 * 100, 2)`%** (aproximadamente **`r round(prob_entre_560_568, 4)`**).
+
+Esto significa que si tomáramos muchas muestras aleatorias de 9 latas cada una, esperaríamos que aproximadamente **`r round(prob_entre_560_568 * 100, 2)` de cada 100** muestras tengan una media de peso entre 560 y 568 gramos. Esta es una probabilidad muy alta, lo que indica que es muy probable que la media muestral se encuentre dentro de este rango, considerando que el intervalo está centrado alrededor de la media poblacional (565 gramos) y tiene una amplitud razonable.
+
+
+
+## Pregunta 2. 
+
+Un proceso industrial produce mosaicos de 10 cm de ancho, con una desviación estándar ($\sigma$) de 0.9 cm. Suponga que la muestra es aleatoria de una población normal.
+
+
+### a) Si se toma una muestra de tamaño 21, calcule $P(S^2 > 1.5 \text{cm}^2)$.
+
+**Definición de la variable aleatoria:**
+
+Variable aleatoria $X$ es el ancho de los mosaicos (en cm).
+
+$X \sim N(\mu = 10, \sigma^2 = (0.9)^2 = 0.81)$, donde $\sigma = 0.9$ cm.
+
+Para una muestra aleatoria de $n = 21$ mosaicos, la variable aleatoria $S^2$ denota la varianza muestral. La distribución muestral de $(n-1)S^2/\sigma^2$ sigue una distribución chi-cuadrado:
+
+$$\frac{(n-1)S^2}{\sigma^2} \sim \chi^2_{n-1}$$
+
+Con $n = 21$, tenemos:
+$$\frac{20S^2}{0.81} \sim \chi^2_{20}$$
+
+**Probabilidad del evento de interés:**
+
+El evento de interés es que la varianza muestral sea mayor a 1.5 cm²: $(S^2 > 1.5)$.
+
+La probabilidad que se debe calcular es:
+$$P(S^2 > 1.5) = P\left(\frac{20S^2}{0.81} > \frac{20 \times 1.5}{0.81}\right) = P\left(\chi^2_{20} > \frac{30}{0.81}\right)$$
+
+**Cálculo de la probabilidad usando R:**
+
+```{r pregunta2a}
+# Parámetros del problema
+mu_poblacional <- 10     # poblacional 
+sigma_poblacional <- 0.9 # poblacional 
+sigma2_poblacional <- sigma_poblacional^2 # poblacional 
+n <- 21                  
+gl <- n - 1             # grados de libertad
+
+# Valor crítico para S²
+s2_critico <- 1.5
+
+# Transformación a chi-cuadrado
+chi2_critico <- (gl * s2_critico) / sigma2_poblacional
+
+# Cálculo de la probabilidad
+probabilidad <- 1 - pchisq(chi2_critico, df = gl)
+```
+
+**Parámetros:**
+
+- $n = `r n`$ 
+- $\sigma^2 = `r sigma2_poblacional`$ cm²
+- Grados de libertad: $gl = n - 1 = `r gl`$
+- Valor crítico: $S^2 = `r s2_critico`$ cm²
+
+**Cálculo de probabilidades:**
+
+- Transformación: $\chi^2 = \frac{20 \times 1.5}{0.81} = `r round(chi2_critico, 4)`$
+- $P(\chi^2_{20} \leq `r round(chi2_critico, 4)`) = `r round(1 - probabilidad, 6)`$
+- $P(S^2 > 1.5) = P(\chi^2_{20} > `r round(chi2_critico, 4)`) = `r round(probabilidad, 6)`$
+- $P(S^2 > 1.5) = `r round(probabilidad * 100, 2)`\%$
+
+**Visualización de la distribución:**
+
+```{r grafico_pregunta2a, echo=FALSE, fig.width=7, fig.height=3}
+# crear datos para la distribución 
+x_values <- seq(0, 50, length.out = 1000)
+df_dist <- data.frame(
+  x = x_values,
+  y = dchisq(x_values, df = gl)
+)
+
+# area sombreada 
+x_area <- seq(chi2_critico, 50, length.out = 200)
+df_area <- data.frame(
+  x = x_area,
+  y = dchisq(x_area, df = gl)
+)
+
+p2 <- ggplot() +
+  geom_line(data = df_dist, aes(x = x, y = y), 
+            color = "blue", size = 1.2, alpha = 0.8) +
+  
+  # area de probabilidad
+  geom_area(data = df_area, aes(x = x, y = y), 
+            fill = "lightcoral", alpha = 0.6, color = "red", size = 0.5) +
+  
+  # indicador vertical
+  geom_vline(xintercept = chi2_critico, color = "red", 
+             linetype = "dashed", size = 1) +
+  geom_vline(xintercept = gl, color = "black", 
+             linetype = "solid", size = 0.8, alpha = 0.7) +
+  
+  # etiquetas
+  annotate("text", x = chi2_critico, y = max(df_dist$y) * 0.1, 
+           label = paste("X^2 =", round(chi2_critico, 2)), 
+           color = "red", size = 4, fontface = "bold", angle = 90, hjust = 0) +
+  annotate("text", x = gl, y = max(df_dist$y) * 0.95, 
+           label = "gl = 20", color = "black", size = 4) +
+  annotate("text", x = chi2_critico + 8, y = max(df_dist$y) * 0.3, 
+           label = paste("P =", round(probabilidad, 4)), 
+           color = "darkred", size = 5, fontface = "bold") +
+  
+  labs(
+    title = expression(paste("Distribución ", chi^2, " con 20 grados de libertad")),
+    x = expression(paste("Valores de ", chi^2)),
+    y = "Densidad"
+  ) +
+  
+  # tema
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10),
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_line()
+  ) +
+  
+  # escalas
+  scale_x_continuous(breaks = seq(0, 50, 10), limits = c(0, 45)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, max(df_dist$y) * 1.1))
+
+# Mostrar el gráfico
+print(p2)
+```
+
+**Interpretación del resultado:**
+
+La probabilidad de que la varianza muestral de una muestra de 21 mosaicos sea mayor a 1.5 cm² es de **`r round(probabilidad * 100, 2)`%** (aproximadamente **`r round(probabilidad, 4)`**).
+
+Esto significa que si tomáramos muchas muestras aleatorias de 21 mosaicos cada una, esperaríamos que aproximadamente **`r round(probabilidad * 100, 2)` de cada 100** muestras tengan una varianza mayor a 1.5 cm². Esta es una probabilidad relativamente baja, lo que indica que es poco probable que la variabilidad en el proceso de producción genere una varianza muestral superior a 1.5 cm², considerando que la varianza poblacional es de 0.81 cm².
+
+
+
+## Pregunta 3. 
+
+Se ha determinado que el 30 $\%$ de una población padece obesidad. Se tomó una muestra aleatoria de 800 estudiantes.
+
+
+### a) Calcule la probabilidad de que la proporción de personas con obesidad sea menor que 33$\%$.
+
+**Definición de la variable aleatoria:**
+
+Variable aleatoria $X$ es el número de estudiantes con obesidad en la muestra.
+
+$X \sim \text{Binomial}(n = 800, p = 0.30)$
+
+Para una muestra aleatoria de $n = 800$ estudiantes, la variable aleatoria $\hat{p}$ denota la proporción muestral de estudiantes con obesidad. Usando el Teorema del Límite Central (en el supuesto de que $n$ es suficientemente grande), la distribución muestral de $\hat{p}$ se aproxima a una distribución normal:
+
+$$\hat{p} \sim N\left(p, \frac{p(1-p)}{n}\right)$$
+
+Con $n = 800$ y $p = 0.30$:
+$$\hat{p} \sim N\left(0.30, \frac{0.30 \times 0.70}{800}\right) = N\left(0.30, \frac{0.21}{800}\right)$$
+
+Por lo tanto: $\hat{p} \sim N(0.30, 0.0002625)$, donde $\sigma_{\hat{p}} = \sqrt{0.0002625}$.
+
+**Probabilidad del evento de interés:**
+
+El evento de interés es que la proporción muestral sea menor que 33%: $(\hat{p} < 0.33)$.
+
+Debido a que busca la proporcion muestral, se utiliza $\sigma_{\hat{p}} = \sqrt{\frac{p(1-p)}{n}}$
+
+La probabilidad que se debe calcular es:
+$$P(\hat{p} < 0.33) = P\left(Z < \frac{0.33 - 0.30}{\sqrt{0.0002625}}\right)$$
+
+**Cálculo de la probabilidad usando R:**
+
+```{r pregunta3a}
+# parametros del problema
+p_poblacional <- 0.30    #  poblacional
+n <- 800                 # tamaño de muestra
+p_muestral_critico <- 0.33  # valor crítico
+
+# aarametros de la distribución muestral 
+mu_p_hat <- p_poblacional
+sigma2_p_hat <- (p_poblacional * (1 - p_poblacional)) / n
+sigma_p_hat <- sqrt(sigma2_p_hat)
+
+# calculo de la probabilidad
+probabilidad_q3 <- pnorm(p_muestral_critico, mean = mu_p_hat, sd = sigma_p_hat)
+
+# estandarización
+z_critico <- (p_muestral_critico - mu_p_hat) / sigma_p_hat
+```
+
+**Parámetros:**
+
+- $n = `r n`$ 
+- $p = `r p_poblacional`$ (proporción poblacional)
+- $\mu_{\hat{p}} = `r mu_p_hat`$
+- $\sigma^2_{\hat{p}} = `r round(sigma2_p_hat, 7)`$
+- $\sigma_{\hat{p}} = `r round(sigma_p_hat, 6)`$
+
+**Cálculo de probabilidades:**
+
+- Estandarización: $Z = \frac{0.33 - 0.30}{`r round(sigma_p_hat, 6)`} = `r round(z_critico, 4)`$
+- $P(\hat{p} < 0.33) = P(Z < `r round(z_critico, 4)`) = `r round(probabilidad_q3, 6)`$
+- $P(\hat{p} < 0.33) = `r round(probabilidad_q3 * 100, 2)`\%$
+
+**Visualización de la distribución:**
+
+```{r grafico_pregunta3a, echo=FALSE, fig.width=7, fig.height=3}
+# crear datos para la distribución 
+x_values <- seq(mu_p_hat - 4*sigma_p_hat, mu_p_hat + 4*sigma_p_hat, length.out = 1000)
+df_dist <- data.frame(
+  x = x_values,
+  y = dnorm(x_values, mean = mu_p_hat, sd = sigma_p_hat)
+)
+
+# area sombreada 
+x_area <- seq(mu_p_hat - 4*sigma_p_hat, p_muestral_critico, length.out = 200)
+df_area <- data.frame(
+  x = x_area,
+  y = dnorm(x_area, mean = mu_p_hat, sd = sigma_p_hat)
+)
+
+p3 <- ggplot() +
+  geom_line(data = df_dist, aes(x = x, y = y), 
+            color = "blue", size = 1.2, alpha = 0.8) +
+  
+  # area de probabilidad
+  geom_area(data = df_area, aes(x = x, y = y), 
+            fill = "lightgreen", alpha = 0.6, color = "green", size = 0.5) +
+  
+  # indicadores verticales
+  geom_vline(xintercept = p_muestral_critico, color = "red", 
+             linetype = "dashed", size = 1) +
+  geom_vline(xintercept = mu_p_hat, color = "black", 
+             linetype = "solid", size = 0.8, alpha = 0.7) +
+  
+  # etiquetas
+  annotate("text", x = p_muestral_critico, y = max(df_dist$y) * 0.1, 
+           label = "0.33", color = "red", size = 4, fontface = "bold") +
+  annotate("text", x = mu_p_hat, y = max(df_dist$y) * 0.95, 
+           label = "p = 0.30", color = "black", size = 4) +
+  annotate("text", x = mu_p_hat - 1.5*sigma_p_hat, y = max(df_dist$y) * 0.5, 
+           label = paste("P =", round(probabilidad_q3, 4)), 
+           color = "darkgreen", size = 5, fontface = "bold") +
+  
+  labs(
+    title = expression(paste("Distribución muestral de ", hat(p), " ~ N(0.30, 0.0002625)")),
+    x = "Proporción muestral",
+    y = "Densidad"
+  ) +
+  
+  # tema
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10),
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_line()
+  ) +
+  
+  # escalas
+  scale_x_continuous(breaks = seq(0.25, 0.35, 0.01), 
+                     labels = scales::percent_format(accuracy = 1)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, max(df_dist$y) * 1.1))
+
+# Mostrar el gráfico
+print(p3)
+```
+
+**Interpretación del resultado:**
+
+La probabilidad de que la proporción muestral de estudiantes con obesidad en una muestra de 800 estudiantes sea menor que 33% es de **`r round(probabilidad_q3 * 100, 2)`%** (aproximadamente **`r round(probabilidad_q3, 4)`**).
+
+Esto significa que si tomáramos muchas muestras aleatorias de 800 estudiantes cada una, esperaríamos que aproximadamente **`r round(probabilidad_q3 * 100, 2)` de cada 100** muestras tengan una proporción de obesidad menor al 33%. Esta es una probabilidad muy alta, lo que indica que es muy probable que la proporción muestral sea menor al 33%, considerando que la proporción poblacional es del 30% y el tamaño de muestra es suficientemente grande para aplicar el Teorema del Límite Central.
+
+
+
