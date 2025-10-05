@@ -1,0 +1,935 @@
+---
+title: "Actividad 1 U1. Intervalos de confianza"
+author: "Abel Isaias Gutierrez Cruz"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: true
+    number_sections: true
+    fig_width: 8
+    fig_height: 5
+    keep_tex: false
+    latex_engine: pdflatex
+  html_document:
+    theme: flatly
+    highlight: tango
+    toc: true
+    toc_float: true
+    code_folding: hide
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+# Setup chunk
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 8,
+  fig.height = 5,
+  fig.align = "center",
+  cache = FALSE
+)
+
+# Load required libraries
+library(here)
+library(tidyverse)
+library(readxl)
+library(plotly)
+library(knitr)
+library(kableExtra)
+library(ggplot2)
+
+```
+
+## Pregunta 1. 
+
+Una muestra aleatoria de tamaño $n = 100$ se extrae de una población con $\sigma = 5.1$. Dado que la media muestral $\bar{x} = 21.6$, construye un intervalo de confianza del $95\%$ para la media de la población $\mu$.
+
+### a) Exponga la evidencia muestral e información poblacional. 
+
+
+**Parámetros poblacionales:**
+
+- Desviación estándar poblacional: $\sigma = 5.1$
+- Media poblacional: $\mu$ (desconocida, a estimar)
+
+**Información muestral:**
+
+- Tamaño de la muestra: $n = 100$
+- Media muestral: $\bar{x} = 21.6$
+- Nivel de confianza: $95\%$ (o $\alpha = 0.05$)
+
+```{r pregunta1_datos}
+n <- 100          
+sigma <- 5.1      
+x_barra <- 21.6   
+nivel_confianza <- 0.95
+alpha <- 1 - nivel_confianza
+```
+
+### b) Exponga la ecuación del intervalo de confianza a emplear y en dicha ecuación sustituya los valores correspondientes.
+
+**Fórmula del intervalo de confianza:**
+
+Dado que conocemos la desviación estándar poblacional ($\sigma$), se utilizara el intervalo de confianza para la media con distribución normal:
+
+$$IC(\mu) = \bar{x} \pm Z_{\alpha/2} \cdot \frac{\sigma}{\sqrt{n}}$$
+
+Donde:
+
+- $\bar{x}$ = media muestral
+- $Z_{\alpha/2}$ = valor crítico de la distribución normal estándar
+- $\sigma$ = desviación estándar poblacional
+- $n$ = tamaño de la muestra
+
+**Cálculo del error estándar:**
+
+$$SE = \frac{\sigma}{\sqrt{n}} = \frac{5.1}{\sqrt{100}} = \frac{5.1}{10} = 0.51$$
+
+**Valor crítico:**
+
+Para un nivel de confianza del $95\%$, $\alpha = 0.05$, entonces $Z_{\alpha/2} = Z_{0.025} = 1.96$
+
+**Sustitución de valores:**
+
+$$IC(\mu) = 21.6 \pm 1.96 \cdot 0.51$$
+
+$$IC(\mu) = 21.6 \pm 0.9996$$
+
+```{r pregunta1_calculo}
+# valor crítico Z
+z_critico <- qnorm(1 - alpha/2)
+
+# error estándar
+error_estandar <- sigma / sqrt(n)
+
+# margen de error
+margen_error <- z_critico * error_estandar
+
+# límites del intervalo
+limite_inferior <- x_barra - margen_error
+limite_superior <- x_barra + margen_error
+```
+
+**Intervalo de confianza resultante:**
+
+$$IC(\mu) = [`r round(limite_inferior, 4)`, `r round(limite_superior, 4)`]$$
+
+
+### c) Conclusión.
+
+De manera puntual, la media de la población se estima en $\bar{x} = 21.6$. Por otra parte, una estimación mediante un intervalo de confianza indica que la media de la población $\mu$ se estima entre $20.60$ y $22.60$ con un nivel de confianza del $95\%$. 
+
+Esto significa que si repitiéramos el proceso de muestreo muchas veces y construyéramos un intervalo de confianza del $95\%$ para cada muestra, aproximadamente el $95\%$ de estos intervalos contendrían el verdadero valor de la media poblacional $\mu$. 
+
+
+## Pregunta 2. 
+
+La pérdida promedio en el peso de $n=16$ aspas después de cierto intervalo de tiempo en un molino de aspas es $3.42$ gramos, con una desviación estándar estimada igual a $0.68$ gramos. Construye un intervalo con un nivel de confianza del $99\%$ para la pérdida promedio real del peso de las aspas en las condiciones establecidas. 
+
+
+### a) Exponga la evidencia muestral e información poblacional. 
+
+**Parámetros poblacionales:**
+
+- Desviación estándar poblacional: $\sigma$ (desconocida)
+- Media poblacional: $\mu$ (desconocida, a estimar)
+
+**Información muestral:**
+
+- Tamaño de la muestra: $n = 16$
+- Media muestral: $\bar{x} = 3.42$ gramos
+- Desviación estándar muestral (estimada): $s = 0.68$ gramos
+- Nivel de confianza: $99\%$ (o $\alpha = 0.01$)
+
+```{r pregunta2_datos}
+n2 <- 16          
+s <- 0.68      
+x_barra2 <- 3.42   
+nivel_confianza2 <- 0.99
+alpha2 <- 1 - nivel_confianza2
+gl <- n2 - 1  # Grados de libertad
+```
+
+### b) Exponga la ecuación del intervalo de confianza a emplear y en dicha ecuación sustituya los valores correspondientes.
+
+**Fórmula del intervalo de confianza:**
+
+Dado que **no conocemos** la desviación estándar poblacional ($\sigma$) y el tamaño de muestra es pequeño ($n < 30$), se utilizara el intervalo de confianza para la media con **distribución t-Student**:
+
+$$IC(\mu) = \bar{x} \pm t_{\alpha/2, n-1} \cdot \frac{s}{\sqrt{n}}$$
+
+Donde:
+
+- $\bar{x}$ = media muestral
+- $t_{\alpha/2, n-1}$ = valor crítico de la distribución t-Student con $n-1$ grados de libertad
+- $s$ = desviación estándar muestral
+- $n$ = tamaño de la muestra
+
+**Cálculo del error estándar:**
+
+$$SE = \frac{s}{\sqrt{n}} = \frac{0.68}{\sqrt{16}} = \frac{0.68}{4} = 0.17$$
+
+**Valor crítico:**
+
+Para un nivel de confianza del $99\%$, $\alpha = 0.01$, y con $gl = n - 1 = 15$ grados de libertad:
+
+```{r pregunta2_calculo}
+# valor crítico t
+t_critico <- qt(1 - alpha2/2, df = gl)
+
+# error estándar
+error_estandar2 <- s / sqrt(n2)
+
+# margen de error
+margen_error2 <- t_critico * error_estandar2
+
+# límites del intervalo
+limite_inferior2 <- x_barra2 - margen_error2
+limite_superior2 <- x_barra2 + margen_error2
+```
+
+El valor de $t_{0.005, 15} = `r round(t_critico, 4)`$
+
+**Sustitución de valores:**
+
+$$IC(\mu) = 3.42 \pm `r round(t_critico, 4)` \cdot 0.17$$
+
+$$IC(\mu) = 3.42 \pm `r round(margen_error2, 4)`$$
+
+**Intervalo de confianza resultante:**
+
+$$IC(\mu) = [`r round(limite_inferior2, 4)`, `r round(limite_superior2, 4)`]$$
+
+
+### c) Conclusión.
+
+De manera puntual, la pérdida promedio real del peso de las aspas del molino se estima en $\bar{x} = 3.42$ gramos. Por otra parte, una estimación mediante un intervalo de confianza indica que la pérdida promedio real del peso de las aspas se estima entre $`r round(limite_inferior2, 2)`$ gramos y $`r round(limite_superior2, 2)`$ gramos con un nivel de confianza del $99\%$.
+
+Esto significa que tenemos un $99\%$ de confianza de que el intervalo de confianza contenga el verdadero valor de la pérdida promedio del peso de las aspas en las condiciones establecidas.
+
+
+## Pregunta 3. 
+
+Una comparación del desgaste de neumáticos para automóvil se llevó a cabo rodando $n1 = n2 = 100$ neumáticos de cada tipo. El número de kilómetros (vida de cada neumático) se registró, en donde Km-vida fue definido como el kilometraje andado antes de que el neumático quedase en un cierto estado de desgaste inaceptable. Para el primer tipo de neumático se estimó una media igual a $26,400$ km y una varianza estimada igual a $1,440,000$; por otra parte, para el segundo tipo de neumático se estimó una media igual $25,100$ km y una varianza estimada igual a $1,960,000$.
+
+Estime $\mu_1 - \mu_2$ y establezca un intervalo de confianza del $99\%$ para la diferencia de los km-vida promedio. Asuma que las varianzas son distintas.
+
+
+### a) Exponga la evidencia muestral e información poblacional. 
+
+**Parámetros poblacionales:**
+
+- Media poblacional neumático tipo 1: $\mu_1$ (desconocida, a estimar)
+- Media poblacional neumático tipo 2: $\mu_2$ (desconocida, a estimar)
+- Varianzas poblacionales: $\sigma_1^2$ y $\sigma_2^2$ (desconocidas y **distintas**)
+
+**Información muestral:**
+
+**Neumático tipo 1:**
+
+- Tamaño de la muestra: $n_1 = 100$
+- Media muestral: $\bar{x}_1 = 26,400 km$
+- Varianza muestral: $s_1^2 = 1,440,000 km^2$
+- Desviación estándar muestral: $s_1 = \sqrt{1,440,000} = 1,200 km$
+
+**Neumático tipo 2:**
+
+- Tamaño de la muestra: $n_2 = 100$
+- Media muestral: $\bar{x}_2 = 25,100 km$
+- Varianza muestral: $s_2^2 = 1,960,000 km^2$
+- Desviación estándar muestral: $s_2 = \sqrt{1,960,000} = 1,400 km$
+
+**Otros:**
+
+- Nivel de confianza: $99\%$ (o $\alpha = 0.01$)
+- Supuesto: Varianzas poblacionales distintas ($\sigma_1^2 \neq \sigma_2^2$)
+
+```{r pregunta3_datos}
+n1 <- 100          
+n2 <- 100          
+x_barra1 <- 26400   
+x_barra2 <- 25100   
+varianza1 <- 1440000
+varianza2 <- 1960000
+s1 <- sqrt(varianza1)  
+s2 <- sqrt(varianza2)  
+nivel_confianza3 <- 0.99
+alpha3 <- 1 - nivel_confianza3
+```
+
+
+### b) Exponga la ecuación del intervalo de confianza a emplear y en dicha ecuación sustituya los valores correspondientes.
+
+**Fórmula del intervalo de confianza:**
+
+Dado que las varianzas poblacionales son **desconocidas y distintas**, se utilizara el intervalo de confianza para la diferencia de dos medias con la **aproximación de Welch**:
+
+$$IC(\mu_1 - \mu_2) = (\bar{x}_1 - \bar{x}_2) \pm t_{\alpha/2, gl} \cdot SE$$
+
+Donde el error estándar es:
+
+$$SE = \sqrt{\frac{s_1^2}{n_1} + \frac{s_2^2}{n_2}}$$
+
+Y los grados de libertad se calculan mediante la **fórmula de Welch-Satterthwaite**:
+
+$$gl = \frac{\left(\frac{s_1^2}{n_1} + \frac{s_2^2}{n_2}\right)^2}{\frac{\left(\frac{s_1^2}{n_1}\right)^2}{n_1-1} + \frac{\left(\frac{s_2^2}{n_2}\right)^2}{n_2-1}}$$
+
+**Cálculos:**
+
+```{r pregunta3_calculo}
+# error estándar
+se_diferencia <- sqrt((varianza1/n1) + (varianza2/n2))
+
+# grados de libertad (Welch-Satterthwaite)
+gl_welch <- ((varianza1/n1 + varianza2/n2)^2) / 
+            (((varianza1/n1)^2/(n1-1)) + ((varianza2/n2)^2/(n2-1)))
+
+# valor crítico t
+t_critico3 <- qt(1 - alpha3/2, df = gl_welch)
+
+# diferencia de medias
+diferencia_medias <- x_barra1 - x_barra2
+
+# margen de error
+margen_error3 <- t_critico3 * se_diferencia
+
+# límites del intervalo
+limite_inferior3 <- diferencia_medias - margen_error3
+limite_superior3 <- diferencia_medias + margen_error3
+```
+
+**Estimación puntual:**
+
+$$\hat{\mu}_1 - \hat{\mu}_2 = \bar{x}_1 - \bar{x}_2 = 26,400 - 25,100 = `r format(diferencia_medias, big.mark=",")`\text{ km}$$
+
+**Cálculo del error estándar:**
+
+$$SE = \sqrt{\frac{1,440,000}{100} + \frac{1,960,000}{100}} = \sqrt{14,400 + 19,600} = \sqrt{34,000} = `r round(se_diferencia, 2)`\text{ km}$$
+
+**Cálculo de grados de libertad:**
+
+$$gl = `r round(gl_welch, 2)`$$
+
+**Valor crítico:**
+
+Para un nivel de confianza del $99\%$ con $gl \approx `r round(gl_welch, 2)`$:
+
+$$t_{0.005, `r round(gl_welch, 2)`} = `r round(t_critico3, 4)`$$
+
+**Sustitución de valores:**
+
+$$IC(\mu_1 - \mu_2) = `r format(diferencia_medias, big.mark=",")` \pm `r round(t_critico3, 4)` \cdot `r round(se_diferencia, 2)`$$
+
+$$IC(\mu_1 - \mu_2) = `r format(diferencia_medias, big.mark=",")` \pm `r round(margen_error3, 2)`$$
+
+**Intervalo de confianza resultante:**
+
+$$IC(\mu_1 - \mu_2) = [`r round(limite_inferior3, 2)`, `r round(limite_superior3, 2)`]\text{ km}$$
+
+
+### c) Conclusión.
+
+De manera puntual, la diferencia entre el km-vida promedio del neumático tipo 1 y el neumático tipo 2 se estima en $\bar{x}_1 - \bar{x}_2 = `r format(diferencia_medias, big.mark=",")`$ km. Por otra parte, una estimación mediante un intervalo de confianza indica que la diferencia real entre los km-vida promedio de ambos tipos de neumáticos ($\mu_1 - \mu_2$) se estima entre $`r format(round(limite_inferior3, 2), big.mark=",")`$ km y $`r format(round(limite_superior3, 2), big.mark=",")`$ km con un nivel de confianza del $99\%$.
+
+Dado que el intervalo de confianza no contiene el cero y todos los valores son positivos, podemos concluir con un $99\%$ de confianza que el neumático tipo 1 tiene un km-vida promedio significativamente mayor que el neumático tipo 2. En otras palabras, el neumático tipo 1 es más duradero que el neumático tipo 2.
+
+
+
+## Pregunta 4. 
+
+
+En un estudio cuyo objetivo es conocer propiedades de materiales potencialmente peligrosos, se tomaron $10$ muestras de cemento estándar, y se encontró que el peso promedio de calcio en dichas muestras fue de $\bar{x}_1 = 80.0$, con una desviación estándar muestral de $s_1 = 5.0$. Por otro lado, se tomaron $15$ muestras de cemento contaminado por plomo, cuyo peso promedio de calcio fue de $\bar{x}_2 = 77.0$, con una desviación estándar muestral de $s_2 = 4.0$. Supóngase que el peso del calcio está distribuido de manera normal. Obtenga un intervalo de confianza del $95\%$ para la diferencia entre medias $\mu_1 - \mu_2$ de los dos tipos de cemento. Por otra parte, suponer que las dos poblaciones poseen igual desviación estándar o varianza. 
+
+
+### a) Exponga la evidencia muestral e información poblacional. 
+
+**Parámetros poblacionales:**
+
+- Media poblacional cemento estándar: $\mu_1$ (desconocida, a estimar)
+- Media poblacional cemento contaminado: $\mu_2$ (desconocida, a estimar)
+- Varianzas poblacionales: $\sigma_1^2 = \sigma_2^2 = \sigma^2$ (desconocidas pero **iguales**)
+
+**Información muestral:**
+
+**Cemento estándar (muestra 1):**
+
+- Tamaño de la muestra: $n_1 = 10$
+- Media muestral: $\bar{x}_1 = 80.0$
+- Desviación estándar muestral: $s_1 = 5.0$
+
+**Cemento contaminado por plomo (muestra 2):**
+
+- Tamaño de la muestra: $n_2 = 15$
+- Media muestral: $\bar{x}_2 = 77.0$
+- Desviación estándar muestral: $s_2 = 4.0$
+
+**Otros:**
+
+- Nivel de confianza: $95\%$ (o $\alpha = 0.05$)
+- Supuesto: Varianzas poblacionales iguales ($\sigma_1^2 = \sigma_2^2$)
+- Supuesto: Distribución normal de los datos
+
+```{r pregunta4_datos}
+n1_p4 <- 10          
+n2_p4 <- 15          
+x_barra1_p4 <- 80.0   
+x_barra2_p4 <- 77.0   
+s1_p4 <- 5.0
+s2_p4 <- 4.0
+nivel_confianza4 <- 0.95
+alpha4 <- 1 - nivel_confianza4
+```
+
+### b) Exponga la ecuación del intervalo de confianza a emplear y en dicha ecuación sustituya los valores correspondientes.
+
+**Fórmula del intervalo de confianza:**
+
+Dado que las varianzas poblacionales son **desconocidas pero iguales**, se utilizara el intervalo de confianza para la diferencia de dos medias con **varianza combinada (pooled variance)**:
+
+$$IC(\mu_1 - \mu_2) = (\bar{x}_1 - \bar{x}_2) \pm t_{\alpha/2, n_1+n_2-2} \cdot SE$$
+
+Donde el error estándar es:
+
+$$SE = s_p \cdot \sqrt{\frac{1}{n_1} + \frac{1}{n_2}}$$
+
+Y la **desviación estándar combinada** se calcula como:
+
+$$s_p = \sqrt{\frac{(n_1-1)s_1^2 + (n_2-1)s_2^2}{n_1 + n_2 - 2}}$$
+
+Los grados de libertad son:
+
+$$gl = n_1 + n_2 - 2$$
+
+**Cálculos:**
+
+```{r pregunta4_calculo}
+# grados de libertad
+gl_p4 <- n1_p4 + n2_p4 - 2
+
+# varianza combinada (pooled variance)
+s_p_squared <- ((n1_p4 - 1) * s1_p4^2 + (n2_p4 - 1) * s2_p4^2) / gl_p4
+
+# desviación estándar combinada
+s_p <- sqrt(s_p_squared)
+
+# error estándar
+se_p4 <- s_p * sqrt(1/n1_p4 + 1/n2_p4)
+
+# valor crítico t
+t_critico4 <- qt(1 - alpha4/2, df = gl_p4)
+
+# diferencia de medias
+diferencia_medias_p4 <- x_barra1_p4 - x_barra2_p4
+
+# margen de error
+margen_error4 <- t_critico4 * se_p4
+
+# límites del intervalo
+limite_inferior4 <- diferencia_medias_p4 - margen_error4
+limite_superior4 <- diferencia_medias_p4 + margen_error4
+```
+
+**Estimación puntual:**
+
+$$\hat{\mu}_1 - \hat{\mu}_2 = \bar{x}_1 - \bar{x}_2 = 80.0 - 77.0 = `r diferencia_medias_p4`$$
+
+**Cálculo de la desviación estándar combinada:**
+
+$$s_p = \sqrt{\frac{(10-1)(5.0)^2 + (15-1)(4.0)^2}{10 + 15 - 2}}$$
+
+$$s_p = \sqrt{\frac{9 \cdot 25 + 14 \cdot 16}{23}} = \sqrt{\frac{225 + 224}{23}} = \sqrt{\frac{449}{23}} = \sqrt{19.52} = `r round(s_p, 4)`$$
+
+**Cálculo del error estándar:**
+
+$$SE = `r round(s_p, 4)` \cdot \sqrt{\frac{1}{10} + \frac{1}{15}} = `r round(s_p, 4)` \cdot \sqrt{0.1 + 0.0667} = `r round(s_p, 4)` \cdot `r round(sqrt(1/n1_p4 + 1/n2_p4), 4)` = `r round(se_p4, 4)`$$
+
+**Grados de libertad:**
+
+$$gl = n_1 + n_2 - 2 = 10 + 15 - 2 = `r gl_p4`$$
+
+**Valor crítico:**
+
+Para un nivel de confianza del $95\%$ con $gl = `r gl_p4`$:
+
+$$t_{0.025, `r gl_p4`} = `r round(t_critico4, 4)`$$
+
+**Sustitución de valores:**
+
+$$IC(\mu_1 - \mu_2) = `r diferencia_medias_p4` \pm `r round(t_critico4, 4)` \cdot `r round(se_p4, 4)`$$
+
+$$IC(\mu_1 - \mu_2) = `r diferencia_medias_p4` \pm `r round(margen_error4, 4)`$$
+
+**Intervalo de confianza resultante:**
+
+$$IC(\mu_1 - \mu_2) = [`r round(limite_inferior4, 4)`, `r round(limite_superior4, 4)`]$$
+
+### c) Conclusión. 
+
+De manera puntual, la diferencia entre el peso promedio de calcio del cemento estándar y el cemento contaminado por plomo se estima en $\bar{x}_1 - \bar{x}_2 = `r diferencia_medias_p4`$. Por otra parte, una estimación mediante un intervalo de confianza indica que la diferencia real entre los pesos promedio de calcio de ambos tipos de cemento ($\mu_1 - \mu_2$) se estima entre $`r round(limite_inferior4, 4)`$ y $`r round(limite_superior4, 4)`$ con un nivel de confianza del $95\%$.
+
+Dado que el intervalo de confianza contiene el cero (ya que $`r round(limite_inferior4, 4)` < 0 < `r round(limite_superior4, 4)`$), no hay evidencia estadísticamente significativa al nivel del $95\%$ de confianza para afirmar que existe una diferencia real entre el peso promedio de calcio en ambos tipos de cemento. Es decir, la contaminación por plomo no parece afectar significativamente el peso promedio de calcio en el cemento bajo las condiciones estudiadas.
+
+
+
+## Pregunta 5. 
+
+En una muestra aleatoria de $85$ soportes del cigüeñal de un motor de automóvil, 10 tienen un terminado que es más rugoso de lo que las especificaciones permiten. Calcula un intervalo de confianza del 95% para $P$. 
+
+### a) Exponga la evidencia muestral e información poblacional. 
+
+**Parámetros poblacionales:**
+
+- Proporción poblacional de soportes defectuosos: $P$ (desconocida, a estimar)
+
+**Información muestral:**
+
+- Tamaño de la muestra: $n = 85$ soportes
+- Número de soportes defectuosos (más rugosos): $x = 10$
+- Proporción muestral: $\hat{p} = \frac{x}{n} = \frac{10}{85} \approx 0.1176$
+- Nivel de confianza: $95\%$ (o $\alpha = 0.05$)
+
+```{r pregunta5_datos}
+n_p5 <- 85          
+x_p5 <- 10          
+p_hat<- x_p5 / n_p5   
+nivel_confianza5 <- 0.95
+alpha5 <- 1 - nivel_confianza5
+```
+
+### b) Exponga la ecuación del intervalo de confianza a emplear y en dicha ecuación sustituya los valores correspondientes.
+
+**Fórmula del intervalo de confianza:**
+
+Para estimar una proporción poblacional $P$ cuando el tamaño de muestra es suficientemente grande (se cumple que $n\hat{p} \geq 5$ y $n(1-\hat{p}) \geq 5$), se utiliza el intervalo de confianza con aproximación normal:
+
+$$IC(P) = \hat{p} \pm Z_{\alpha/2} \cdot \sqrt{\frac{\hat{p}(1-\hat{p})}{n}}$$
+
+Donde:
+
+- $\hat{p}$ = proporción muestral
+- $Z_{\alpha/2}$ = valor crítico de la distribución normal estándar
+- $n$ = tamaño de la muestra
+
+**Verificación de condiciones:**
+
+```{r pregunta5_condiciones}
+# verificar condiciones para aproximación normal
+condicion1 <- n_p5 * p_hat
+condicion2 <- n_p5 * (1 - p_hat)
+```
+
+- $n\hat{p} = 85 \times `r round(p_hat, 4)` = `r round(condicion1, 2)` \geq 5$ 
+- $n(1-\hat{p}) = 85 \times `r round(1-p_hat, 4)` = `r round(condicion2, 2)` \geq 5$ 
+
+Las condiciones se cumplen, por lo que podemos usar la aproximación normal.
+
+**Cálculos:**
+
+```{r pregunta5_calculo}
+# error estándar
+se_p5 <- sqrt((p_hat* (1 - p_hat)) / n_p5)
+
+# valor crítico Z
+z_critico5 <- qnorm(1 - alpha5/2)
+
+# margen de error
+margen_error5 <- z_critico5 * se_p5
+
+# límites del intervalo
+limite_inferior5 <- p_hat- margen_error5
+limite_superior5 <- p_hat+ margen_error5
+```
+
+**Estimación puntual:**
+
+$$\hat{P} = \hat{p} = \frac{10}{85} = `r round(p_hat, 4)`$$
+
+**Cálculo del error estándar:**
+
+$$SE = \sqrt{\frac{\hat{p}(1-\hat{p})}{n}} = \sqrt{\frac{`r round(p_hat, 4)` \times `r round(1-p_hat, 4)`}{85}} = \sqrt{\frac{`r round(p_hat*(1-p_hat), 6)`}{85}} = `r round(se_p5, 4)`$$
+
+**Valor crítico:**
+
+Para un nivel de confianza del $95\%$, $\alpha = 0.05$, entonces:
+
+$$Z_{0.025} = `r round(z_critico5, 4)`$$
+
+**Sustitución de valores:**
+
+$$IC(P) = `r round(p_hat, 4)` \pm `r round(z_critico5, 4)` \cdot `r round(se_p5, 4)`$$
+
+$$IC(P) = `r round(p_hat, 4)` \pm `r round(margen_error5, 4)`$$
+
+**Intervalo de confianza resultante:**
+
+$$IC(P) = [`r round(limite_inferior5, 4)`, `r round(limite_superior5, 4)`]$$
+
+O expresado en porcentaje:
+
+$$IC(P) = [`r round(limite_inferior5*100, 2)`\%, `r round(limite_superior5*100, 2)`\%]$$
+
+
+### c) Conclusión.
+
+De manera puntual, la proporción de soportes del cigüeñal con terminado más rugoso de lo permitido se estima en $\hat{p} = `r round(p_hat, 4)`$ o $`r round(p_hat*100, 2)`\%$. Por otra parte, una estimación mediante un intervalo de confianza indica que la proporción poblacional real de soportes defectuosos ($P$) se estima entre $`r round(limite_inferior5, 4)`$ y $`r round(limite_superior5, 4)`$ (o entre $`r round(limite_inferior5*100, 2)`\%$ y $`r round(limite_superior5*100, 2)`\%$) con un nivel de confianza del $95\%$.
+
+Esto significa que tenemos un $95\%$ de confianza de que el intervalo de confianza contenga el verdadero valor de la proporción de soportes defectuosos en la producción.  
+
+
+## Pregunta 6. 
+
+Considere el proceso de fabricación de soportes para cigüeñales del ejercicio 5. Supóngase que se hace una modificación al proceso de acabado de la superficie y que, de manera subsecuente, se toma una segunda muestra aleatoria de tamaño $85$. El número de ejes defectuosos en esta segunda muestra es $8$. Construya un intervalo de confianza aproximado para la diferencia en la proporción de los soportes defectuosos producidos por ambos procesos. Considere un nivel de confianza del 95%. 
+
+### a) Exponga la evidencia muestral e información poblacional. 
+
+**Parámetros poblacionales:**
+
+- Proporción poblacional de soportes defectuosos del proceso original: $P_1$ (desconocida)
+- Proporción poblacional de soportes defectuosos del proceso modificado: $P_2$ (desconocida)
+- Diferencia de proporciones: $P_1 - P_2$ (a estimar)
+
+**Información muestral:**
+
+**Proceso original (muestra 1):**
+
+- Tamaño de la muestra: $n_1 = 85$ soportes
+- Número de soportes defectuosos: $x_1 = 10$
+- Proporción muestral: $\hat{p}_1 = \frac{10}{85} \approx 0.1176$
+
+**Proceso modificado (muestra 2):**
+
+- Tamaño de la muestra: $n_2 = 85$ soportes
+- Número de soportes defectuosos: $x_2 = 8$
+- Proporción muestral: $\hat{p}_2 = \frac{8}{85} \approx 0.0941$
+
+**Otros:**
+
+- Nivel de confianza: $95\%$ (o $\alpha = 0.05$)
+
+```{r pregunta6_datos}
+# proceso original (de la pregunta 5)
+n1_p6 <- 85          
+x1_p6 <- 10          
+p_hat1 <- x1_p6 / n1_p6   
+
+# proceso modificado
+n2_p6 <- 85          
+x2_p6 <- 8          
+p_hat2 <- x2_p6 / n2_p6   
+
+nivel_confianza6 <- 0.95
+alpha6 <- 1 - nivel_confianza6
+```
+
+### b) Exponga la ecuación del intervalo de confianza a emplear y en dicha ecuación sustituya los valores correspondientes.
+
+**Fórmula del intervalo de confianza:**
+
+Para estimar la diferencia entre dos proporciones poblacionales $P_1 - P_2$ cuando las muestras son independientes y suficientemente grandes, se utiliza el intervalo de confianza con aproximación normal:
+
+$$IC(P_1 - P_2) = (\hat{p}_1 - \hat{p}_2) \pm Z_{\alpha/2} \cdot SE$$
+
+Donde el error estándar es:
+
+$$SE = \sqrt{\frac{\hat{p}_1(1-\hat{p}_1)}{n_1} + \frac{\hat{p}_2(1-\hat{p}_2)}{n_2}}$$
+
+**Verificación de condiciones:**
+
+Para que la aproximación normal sea válida, se debe cumplir que $n_i\hat{p}_i \geq 5$ y $n_i(1-\hat{p}_i) \geq 5$ para $i = 1, 2$:
+
+```{r pregunta6_condiciones}
+# verificar condiciones
+cond1_1 <- n1_p6 * p_hat1
+cond1_2 <- n1_p6 * (1 - p_hat1)
+cond2_1 <- n2_p6 * p_hat2
+cond2_2 <- n2_p6 * (1 - p_hat2)
+```
+
+**Para el proceso original:**
+
+- $n_1\hat{p}_1 = 85 \times `r round(p_hat1, 4)` = `r round(cond1_1, 2)` \geq 5$ 
+- $n_1(1-\hat{p}_1) = 85 \times `r round(1-p_hat1, 4)` = `r round(cond1_2, 2)` \geq 5$ 
+
+**Para el proceso modificado:**
+
+- $n_2\hat{p}_2 = 85 \times `r round(p_hat2, 4)` = `r round(cond2_1, 2)` \geq 5$ 
+- $n_2(1-\hat{p}_2) = 85 \times `r round(1-p_hat2, 4)` = `r round(cond2_2, 2)` \geq 5$ 
+
+Todas las condiciones se cumplen, por lo que podemos usar la aproximación normal.
+
+**Cálculos:**
+
+```{r pregunta6_calculo}
+# diferencia de proporciones muestrales
+diferencia_prop <- p_hat1 - p_hat2
+
+# error estándar
+se_p6 <- sqrt((p_hat1 * (1 - p_hat1) / n1_p6) + (p_hat2 * (1 - p_hat2) / n2_p6))
+
+# valor crítico Z
+z_critico6 <- qnorm(1 - alpha6/2)
+
+# margen de error
+margen_error6 <- z_critico6 * se_p6
+
+# límites del intervalo
+limite_inferior6 <- diferencia_prop - margen_error6
+limite_superior6 <- diferencia_prop + margen_error6
+```
+
+**Estimación puntual:**
+
+$$\hat{P}_1 - \hat{P}_2 = \hat{p}_1 - \hat{p}_2 = `r round(p_hat1, 4)` - `r round(p_hat2, 4)` = `r round(diferencia_prop, 4)`$$
+
+**Cálculo del error estándar:**
+
+$$SE = \sqrt{\frac{`r round(p_hat1, 4)` \times `r round(1-p_hat1, 4)`}{85} + \frac{`r round(p_hat2, 4)` \times `r round(1-p_hat2, 4)`}{85}}$$
+
+$$SE = \sqrt{\frac{`r round(p_hat1*(1-p_hat1), 6)`}{85} + \frac{`r round(p_hat2*(1-p_hat2), 6)`}{85}} = \sqrt{`r round(p_hat1*(1-p_hat1)/85, 6)` + `r round(p_hat2*(1-p_hat2)/85, 6)`} = `r round(se_p6, 4)`$$
+
+**Valor crítico:**
+
+Para un nivel de confianza del $95\%$, $\alpha = 0.05$:
+
+$$Z_{0.025} = `r round(z_critico6, 4)`$$
+
+**Sustitución de valores:**
+
+$$IC(P_1 - P_2) = `r round(diferencia_prop, 4)` \pm `r round(z_critico6, 4)` \cdot `r round(se_p6, 4)`$$
+
+$$IC(P_1 - P_2) = `r round(diferencia_prop, 4)` \pm `r round(margen_error6, 4)`$$
+
+**Intervalo de confianza resultante:**
+
+$$IC(P_1 - P_2) = [`r round(limite_inferior6, 4)`, `r round(limite_superior6, 4)`]$$
+
+O expresado en porcentaje:
+
+$$IC(P_1 - P_2) = [`r round(limite_inferior6*100, 2)`\%, `r round(limite_superior6*100, 2)`\%]$$
+
+### c) Conclusión.
+
+De manera puntual, la diferencia entre la proporción de soportes defectuosos del proceso original y el proceso modificado se estima en $\hat{p}_1 - \hat{p}_2 = `r round(diferencia_prop, 4)`$ o $`r round(diferencia_prop*100, 2)`\%$. Por otra parte, una estimación mediante un intervalo de confianza indica que la diferencia real entre las proporciones de soportes defectuosos de ambos procesos ($P_1 - P_2$) se estima entre $`r round(limite_inferior6, 4)`$ y $`r round(limite_superior6, 4)`$ (o entre $`r round(limite_inferior6*100, 2)`\%$ y $`r round(limite_superior6*100, 2)`\%$) con un nivel de confianza del $95\%$.
+
+Dado que el intervalo de confianza contiene el cero (ya que $`r round(limite_inferior6, 4)` < 0 < `r round(limite_superior6, 4)`$), no hay evidencia estadísticamente significativa al nivel del $95\%$ de confianza para afirmar que la modificación al proceso de acabado haya reducido significativamente la proporción de soportes defectuosos. Es decir, aunque el proceso modificado muestra una proporción muestral ligeramente menor de defectos, esta diferencia podría deberse al azar y no necesariamente a una mejora real en el proceso. 
+
+
+
+## Pregunta 7. 
+
+Un fabricante de detergente líquido está interesado en la uniformidad de la maquina utilizada para llenar las botellas. De manera específica, es deseable que la $\sigma^2$ del proceso de llenado sea menor que $0.25$ onzas de líquido. Supóngase que la distribución de llenado es aproximadamente Normal. Al tomar una muestra aleatoria de $20$ botellas, se obtiene una estimación de la varianza igual a $0.0153 \text{(onzas de fluido)}^2$ . Calcule un intervalo de confianza del 95% para el valor de la varianza ($\sigma^2$) del llenado. 
+
+
+### a) Exponga la evidencia muestral e información poblacional. 
+
+**Parámetros poblacionales:**
+
+- Varianza poblacional del llenado: $\sigma^2$ (desconocida, a estimar)
+- Desviación estándar poblacional: $\sigma$ (desconocida)
+
+**Información muestral:**
+
+- Tamaño de la muestra: $n = 20$ botellas
+- Varianza muestral: $s^2 = 0.0153$ (onzas de fluido)²
+- Desviación estándar muestral: $s = \sqrt{0.0153} \approx 0.1237$ onzas
+- Nivel de confianza: $95\%$ (o $\alpha = 0.05$)
+
+**Otros:**
+
+- Supuesto: La distribución del llenado es aproximadamente Normal
+- Valor de referencia: Se desea que $\sigma^2 < 0.25$ (onzas)²
+
+```{r pregunta7_datos}
+n_p7 <- 20          
+s2_p7 <- 0.0153     
+s_p7 <- sqrt(s2_p7) 
+nivel_confianza7 <- 0.95
+alpha7 <- 1 - nivel_confianza7
+gl_p7 <- n_p7 - 1
+```
+
+### b) Exponga la ecuación del intervalo de confianza a emplear y en dicha ecuación sustituya los valores correspondientes.
+
+**Fórmula del intervalo de confianza:**
+
+Para estimar la varianza poblacional $\sigma^2$ cuando la población sigue una distribución normal, se utiliza el intervalo de confianza basado en la **distribución Chi-cuadrado ($\chi^2$)**:
+
+$$IC(\sigma^2) = \left[\frac{(n-1)s^2}{\chi^2_{\alpha/2, n-1}}, \frac{(n-1)s^2}{\chi^2_{1-\alpha/2, n-1}}\right]$$
+
+Donde:
+
+- $n$ = tamaño de la muestra
+- $s^2$ = varianza muestral
+- $\chi^2_{\alpha/2, n-1}$ = valor crítico superior de la distribución Chi-cuadrado con $n-1$ grados de libertad
+- $\chi^2_{1-\alpha/2, n-1}$ = valor crítico inferior de la distribución Chi-cuadrado con $n-1$ grados de libertad
+
+**Nota:** El límite inferior del intervalo usa el Chi-cuadrado superior, y el límite superior usa el Chi-cuadrado inferior, debido a que la varianza está en el denominador.
+
+**Cálculos:**
+
+```{r pregunta7_calculo}
+# grados de libertad
+gl_p7 <- n_p7 - 1
+
+# valores críticos de Chi-cuadrado
+chi2_superior <- qchisq(alpha7/2, df = gl_p7, lower.tail = FALSE)  # chi²_{0.025, 19}
+chi2_inferior <- qchisq(1 - alpha7/2, df = gl_p7, lower.tail = FALSE)  # chi²_{0.975, 19}
+
+# límites del intervalo para la varianza
+limite_inferior7_var <- (gl_p7 * s2_p7) / chi2_superior
+limite_superior7_var <- (gl_p7 * s2_p7) / chi2_inferior
+
+# límites del intervalo para la desviación estándar (opcional)
+limite_inferior7_sd <- sqrt(limite_inferior7_var)
+limite_superior7_sd <- sqrt(limite_superior7_var)
+```
+
+**Estimación puntual:**
+
+$$\hat{\sigma}^2 = s^2 = 0.0153 \text{ (onzas)}^2$$
+
+**Grados de libertad:**
+
+$$gl = n - 1 = 20 - 1 = 19$$
+
+**Valores críticos de Chi-cuadrado:**
+
+Para un nivel de confianza del $95\%$ con $gl = 19$:
+
+- $\chi^2_{0.025, 19} = `r round(chi2_superior, 4)`$ (valor crítico superior)
+- $\chi^2_{0.975, 19} = `r round(chi2_inferior, 4)`$ (valor crítico inferior)
+
+**Sustitución de valores:**
+
+$$\text{Límite inferior} = \frac{(20-1) \times 0.0153}{\chi^2_{0.025, 19}} = \frac{19 \times 0.0153}{`r round(chi2_superior, 4)`} = \frac{`r 19 * 0.0153`}{`r round(chi2_superior, 4)`} = `r round(limite_inferior7_var, 4)`$$
+
+$$\text{Límite superior} = \frac{(20-1) \times 0.0153}{\chi^2_{0.975, 19}} = \frac{19 \times 0.0153}{`r round(chi2_inferior, 4)`} = \frac{`r 19 * 0.0153`}{`r round(chi2_inferior, 4)`} = `r round(limite_superior7_var, 4)`$$
+
+**Intervalo de confianza resultante para la varianza:**
+
+$$IC(\sigma^2) = [`r round(limite_inferior7_var, 4)`, `r round(limite_superior7_var, 4)`] \text{ (onzas)}^2$$
+
+
+### c) Conclusión.
+
+De manera puntual, la varianza del proceso de llenado se estima en $s^2 = 0.0153$ (onzas)². Por otra parte, una estimación mediante un intervalo de confianza indica que la varianza poblacional real del proceso de llenado ($\sigma^2$) se estima entre $`r round(limite_inferior7_var, 4)`$ (onzas)² y $`r round(limite_superior7_var, 4)`$ (onzas)² con un nivel de confianza del $95\%$.
+
+Dado que el límite superior del intervalo de confianza es $`r round(limite_superior7_var, 4)`$ (onzas)², el cual es **menor que** $0.25$ (onzas)², podemos concluir con un $95\%$ de confianza que el proceso de llenado cumple con el requisito de uniformidad deseado por el fabricante. Es decir, hay evidencia estadística de que la varianza del proceso de llenado es menor que $0.25$ (onzas)², lo que indica que la máquina mantiene un nivel adecuado de uniformidad en el llenado de las botellas.
+
+
+## Pregunta 8. 
+
+Una compañía fabrica propulsores para uso en motores de turbina. Una de las operaciones consiste en esmerilar el terminado de una superficie particular con una aleación de titanio. Pueden emplearse dos procesos de esmerilado y, ambos pueden producir partes que tienen la misma rugosidad superficial promedio. Al ingeniero de manufactura le gustaría seleccionar el proceso que tenga la menor variabilidad en la rugosidad de la superficie. Para ello, toma una muestra de tamaño igual a $12$ partes del primer proceso, la cual tiene una estimación de la desviación estándar igual $5.1$ micropulgadas y; una segunda muestra aleatoria de tamaño igual a $15$ partes del segundo proceso, la cual tiene una estimación de la desviación estándar igual a $4.7$ micro pulgadas. Se desea encontrar un intervalo de confianza del $90\%$ para el cociente de las dos varianzas $\frac{\sigma_1^2}{\sigma_2^2}$ . Suponer que los dos procesos son independientes y que la rugosidad de la superficie está distribuida de manera Normal. 
+
+
+### a) Exponga la evidencia muestral e información poblacional. 
+
+**Parámetros poblacionales:**
+
+- Varianza poblacional del proceso 1: $\sigma_1^2$ (desconocida)
+- Varianza poblacional del proceso 2: $\sigma_2^2$ (desconocida)
+- Cociente de varianzas: $\frac{\sigma_1^2}{\sigma_2^2}$ (a estimar)
+
+**Información muestral:**
+
+**Proceso 1 (esmerilado 1):**
+
+- Tamaño de la muestra: $n_1 = 12$ partes
+- Desviación estándar muestral: $s_1 = 5.1$ micropulgadas
+- Varianza muestral: $s_1^2 = (5.1)^2 = 26.01$ (micropulgadas)²
+
+**Proceso 2 (esmerilado 2):**
+
+- Tamaño de la muestra: $n_2 = 15$ partes
+- Desviación estándar muestral: $s_2 = 4.7$ micropulgadas
+- Varianza muestral: $s_2^2 = (4.7)^2 = 22.09$ (micropulgadas)²
+
+**Otros:**
+
+- Nivel de confianza: $90\%$ (o $\alpha = 0.10$)
+- Supuesto: Los dos procesos son independientes
+- Supuesto: La rugosidad superficial está distribuida normalmente
+
+```{r pregunta8_datos}
+n1_p8 <- 12          
+s1_p8 <- 5.1         
+s1_2_p8 <- s1_p8^2   
+
+n2_p8 <- 15          
+s2_p8 <- 4.7         
+s2_2_p8 <- s2_p8^2   
+
+nivel_confianza8 <- 0.90
+alpha8 <- 1 - nivel_confianza8
+
+gl1_p8 <- n1_p8 - 1
+gl2_p8 <- n2_p8 - 1
+```
+
+### b) Exponga la ecuación del intervalo de confianza a emplear y en dicha ecuación sustituya los valores correspondientes.
+
+**Fórmula del intervalo de confianza:**
+
+Para estimar el cociente de dos varianzas poblacionales $\frac{\sigma_1^2}{\sigma_2^2}$ cuando ambas poblaciones siguen distribuciones normales y las muestras son independientes, se utiliza el intervalo de confianza basado en la **distribución F de Fisher**:
+
+$$IC\left(\frac{\sigma_1^2}{\sigma_2^2}\right) = \left[\frac{s_1^2}{s_2^2} \cdot \frac{1}{F_{\alpha/2, n_1-1, n_2-1}}, \frac{s_1^2}{s_2^2} \cdot F_{\alpha/2, n_2-1, n_1-1}\right]$$
+
+Donde:
+
+- $s_1^2$ y $s_2^2$ = varianzas muestrales
+- $F_{\alpha/2, n_1-1, n_2-1}$ = valor crítico superior de la distribución F con $n_1-1$ y $n_2-1$ grados de libertad
+- $F_{\alpha/2, n_2-1, n_1-1}$ = valor crítico superior de la distribución F con $n_2-1$ y $n_1-1$ grados de libertad (invertidos)
+
+**Cálculos:**
+
+```{r pregunta8_calculo}
+# cociente de varianzas muestrales
+cociente_var <- s1_2_p8 / s2_2_p8
+
+# valores críticos de F
+F_superior <- qf(1 - alpha8/2, df1 = gl1_p8, df2 = gl2_p8)  # F_{0.05, 11, 14}
+F_inferior_inv <- qf(1 - alpha8/2, df1 = gl2_p8, df2 = gl1_p8)  # F_{0.05, 14, 11}
+
+# límites del intervalo
+limite_inferior8 <- cociente_var / F_superior
+limite_superior8 <- cociente_var * F_inferior_inv
+```
+
+**Estimación puntual:**
+
+$$\frac{\hat{\sigma}_1^2}{\hat{\sigma}_2^2} = \frac{s_1^2}{s_2^2} = \frac{26.01}{22.09} = `r round(cociente_var, 4)`$$
+
+**Grados de libertad:**
+
+- $gl_1 = n_1 - 1 = 12 - 1 = 11$
+- $gl_2 = n_2 - 1 = 15 - 1 = 14$
+
+**Valores críticos de F:**
+
+Para un nivel de confianza del $90\%$ ($\alpha = 0.10$, $\alpha/2 = 0.05$):
+
+- $F_{0.05, 11, 14} = `r round(F_superior, 4)`$ (valor crítico superior)
+- $F_{0.05, 14, 11} = `r round(F_inferior_inv, 4)`$ (valor crítico para límite superior)
+
+**Sustitución de valores:**
+
+$$\text{Límite inferior} = \frac{`r round(cociente_var, 4)`}{`r round(F_superior, 4)`} = `r round(limite_inferior8, 4)`$$
+
+$$\text{Límite superior} = `r round(cociente_var, 4)` \times `r round(F_inferior_inv, 4)` = `r round(limite_superior8, 4)`$$
+
+**Intervalo de confianza resultante:**
+
+$$IC\left(\frac{\sigma_1^2}{\sigma_2^2}\right) = [`r round(limite_inferior8, 4)`, `r round(limite_superior8, 4)`]$$
+
+### c) Conclusión.
+
+De manera puntual, el cociente de las varianzas de los dos procesos de esmerilado se estima en $\frac{s_1^2}{s_2^2} = `r round(cociente_var, 4)`$. Por otra parte, una estimación mediante un intervalo de confianza indica que el cociente real de las varianzas de ambos procesos ($\frac{\sigma_1^2}{\sigma_2^2}$) se estima entre $`r round(limite_inferior8, 4)`$ y $`r round(limite_superior8, 4)`$ con un nivel de confianza del $90\%$.
+
+Dado que el intervalo de confianza contiene el valor $1$ (ya que $`r round(limite_inferior8, 4)` < 1 < `r round(limite_superior8, 4)`$), no hay evidencia estadísticamente significativa al nivel del $90\%$ de confianza para afirmar que las varianzas de los dos procesos de esmerilado sean diferentes. Es decir, ambos procesos parecen tener una variabilidad similar en la rugosidad de la superficie, por lo que desde el punto de vista de la variabilidad, cualquiera de los dos procesos podría ser seleccionado por el ingeniero de manufactura.
+
+
+## Source code
+
+- [Github](https://github.com/IsaiasGutierrezCruz/sms-cimat-projects/blob/main/r/scripts/basic-statistical-methods/activity_1.Rmd)
