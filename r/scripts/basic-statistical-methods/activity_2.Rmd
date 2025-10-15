@@ -1,0 +1,1481 @@
+---
+title: "Actividad 2 U2. Pruebas de Hipótesis"
+author: "Abel Isaias Gutierrez Cruz"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: true
+    number_sections: true
+    fig_width: 8
+    fig_height: 5
+    keep_tex: false
+    latex_engine: pdflatex
+  html_document:
+    theme: flatly
+    highlight: tango
+    toc: true
+    toc_float: true
+    code_folding: hide
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+# Setup chunk
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 8,
+  fig.height = 5,
+  fig.align = "center",
+  cache = FALSE
+)
+
+# Load required libraries
+library(here)
+library(tidyverse)
+library(readxl)
+library(plotly)
+library(knitr)
+library(kableExtra)
+library(ggplot2)
+
+```
+
+## Pregunta 1. 
+
+Se está investigando una nueva fibra para tapicería producida en una fábrica de textiles. La compañía desea probar si la media de la elongación es menor a 12, y se sabe por experiencia que tiene una desviación estándar poblacional de 0.5 kg. Para ello, se obtiene una muestra aleatoria de 100 especímenes, en el cual se calculó la elongación promedio muestral de 11.25 kg. Pruebe la hipótesis utilizando $\alpha = 0.05$
+
+### Hipótesis
+
+$$H_0: \mu \geq 12 \text{ kg}$$
+$$H_1: \mu < 12 \text{ kg (afirmación a probar)}$$
+
+Esta es una prueba de hipótesis **unilateral izquierda** para la media poblacional con varianza conocida.
+
+### Evidencia muestral
+
+```{r pregunta1-datos, echo=FALSE}
+n <- 100
+x_bar <- 11.25
+sigma <- 0.5
+mu_0 <- 12
+alpha <- 0.05
+
+# estadístico de prueba Z
+z_stat <- (x_bar - mu_0) / (sigma / sqrt(n))
+```
+
+Datos del problema:
+
+- Tamaño de muestra: $n = `r n`$
+- Media muestral: $\bar{x} = `r x_bar`$ kg
+- Desviación estándar poblacional: $\sigma = `r sigma`$ kg
+- Nivel de significancia: $\alpha = `r alpha`$
+
+El **estadístico de prueba** se calcula como:
+
+$$Z = \frac{\bar{x} - \mu_0}{\sigma / \sqrt{n}} = \frac{`r x_bar` - `r mu_0`}{`r sigma` / \sqrt{`r n`}} = \frac{`r x_bar - mu_0`}{`r sigma/sqrt(n)`} = `r z_stat`$$
+
+**Estadístico de prueba observado:** $Z = `r z_stat`$
+
+### Región de rechazo
+
+```{r pregunta1-region}
+# valor crítico
+z_critico <- qnorm(alpha)
+
+# p-valor
+p_valor <- pnorm(z_stat)
+```
+
+Para una prueba unilateral izquierda con $\alpha = `r alpha`$:
+
+**Valor crítico:** $Z_{\alpha} = Z_{`r alpha`} = `r round(z_critico, 4)`$
+
+**P-valor:** $p = `r format(p_valor, scientific = TRUE, digits = 4)`$
+
+**Región de rechazo:** $Z < `r round(z_critico, 4)`$
+
+**Criterio de decisión:** 
+
+- Si $Z < `r round(z_critico, 4)`$, rechazamos $H_0$
+- Si $Z \geq `r round(z_critico, 4)`$, no rechazamos $H_0$
+
+```{r pregunta1-visualizacion, fig.height=4, fig.width=7, echo=FALSE}
+# Visualización de la prueba de hipótesis
+x_values <- seq(-4, 4, length.out = 1000)
+y_values <- dnorm(x_values)
+
+# Crear dataframe para ggplot
+df_plot <- data.frame(x = x_values, y = y_values)
+
+ggplot(df_plot, aes(x = x, y = y)) +
+  geom_line(color = "blue", linewidth = 1) +
+  # Región de rechazo
+  geom_area(data = subset(df_plot, x <= z_critico), 
+            aes(x = x, y = y), fill = "red", alpha = 0.3) +
+  # Valor crítico
+  geom_vline(xintercept = z_critico, color = "red", linetype = "dashed", linewidth = 1) +
+  # Estadístico observado
+  geom_vline(xintercept = z_stat, color = "darkgreen", linewidth = 1.2) +
+  # Anotaciones
+  annotate("text", x = z_critico, y = 0.3, 
+           label = paste("Z crítico =", round(z_critico, 2)), 
+           hjust = 1.1, color = "red", size = 4) +
+  annotate("text", x = z_stat, y = 0.35, 
+           label = paste("Z observado =", round(z_stat, 2)), 
+           hjust = -0.1, color = "darkgreen", size = 4) +
+  annotate("text", x = -3, y = 0.05, 
+           label = "Región de\nrechazo", 
+           color = "red", size = 3.5, fontface = "bold") +
+  labs(title = "Prueba de Hipótesis: Distribución Normal Estándar",
+       subtitle = "Prueba unilateral izquierda con alpha = 0.05",
+       x = "Valores Z",
+       y = "Densidad") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+### Conclusión
+
+```{r pregunta1-decision, echo=FALSE}
+if (z_stat < z_critico) {
+  decision <- "Se rechaza H0"
+  comparacion <- "<"
+} else {
+  decision <- "No  Se rechaza H0"
+  comparacion <- "\\geq"
+}
+```
+
+**Decisión:** **`r decision`**
+
+**Justificación:**
+
+- Estadístico observado: $Z = `r round(z_stat, 4)`$
+- Valor crítico: $Z_{\alpha} = `r round(z_critico, 4)`$
+- Como $Z_{observado} = `r round(z_stat, 4)` `r comparacion` `r round(z_critico, 4)` = Z_{crítico}$, entonces **`r decision`**
+
+
+
+## Pregunta 2. 
+
+Un fabricante de componentes para televisores afirma que se necesitan menos de 250 microamperes ($\mu A$) de corriente para alcanzar cierto grado de brillantez en un tipo de televisor en particular. Una muestra de 20 aparatos produce un promedio muestral de corriente de $\bar{x} = 257.3 \mu A$. Denotemos por $\mu$ el verdadero promedio de corriente necesaria para alcanzar la brillantez deseada con aparatos de este tipo. Supongamos que $\mu$ es la media de una población normal y, que se sabe por experiencia previa que $\sigma = 15 \mu A$. Pruebe con un valor $\alpha=0.05$, la hipótesis nula de que $\mu$ alcance un valor máximo de $250 \mu A$, contra la hipótesis alternativa apropiada.
+
+### Hipótesis
+
+$$H_0: \mu \leq 250 \text{ } \mu A$$
+$$H_1: \mu > 250 \text{ } \mu A$$
+
+Esta es una prueba de hipótesis **unilateral derecha** para la media poblacional con varianza conocida. La afirmación del fabricante es que se necesitan menos de 250 $\mu A$, por lo que queremos probar si hay evidencia de que se necesita más.
+
+### Evidencia muestral
+
+```{r pregunta2-datos, echo=FALSE}
+# Datos del problema
+n_2 <- 20
+x_bar_2 <- 257.3
+sigma_2 <- 15
+mu_0_2 <- 250
+alpha_2 <- 0.05
+
+# Estadístico de prueba Z
+z_stat_2 <- (x_bar_2 - mu_0_2) / (sigma_2 / sqrt(n_2))
+```
+
+Datos del problema:
+
+- Tamaño de muestra: $n = `r n_2`$
+- Media muestral: $\bar{x} = `r x_bar_2`$ $\mu A$
+- Desviación estándar poblacional: $\sigma = `r sigma_2`$ $\mu A$
+- Media hipotética: $\mu_0 = `r mu_0_2`$ $\mu A$
+- Nivel de significancia: $\alpha = `r alpha_2`$
+
+El **estadístico de prueba** se calcula como:
+
+$$Z = \frac{\bar{x} - \mu_0}{\sigma / \sqrt{n}} = \frac{`r x_bar_2` - `r mu_0_2`}{`r sigma_2` / \sqrt{`r n_2`}} = \frac{`r x_bar_2 - mu_0_2`}{`r round(sigma_2/sqrt(n_2), 4)`} = `r round(z_stat_2, 4)`$$
+
+**Estadístico de prueba observado:** $Z = `r round(z_stat_2, 4)`$
+
+### Región de rechazo
+
+```{r pregunta2-region, echo=FALSE}
+# Valor crítico (cola derecha)
+z_critico_2 <- qnorm(1 - alpha_2)
+
+# p-valor (cola derecha)
+p_valor_2 <- 1 - pnorm(z_stat_2)
+```
+
+Para una prueba unilateral derecha con $\alpha = `r alpha_2`$:
+
+**Valor crítico:** $Z_{1-\alpha} = Z_{`r 1-alpha_2`} = `r round(z_critico_2, 4)`$
+
+**P-valor:** $p = `r round(p_valor_2, 4)`$
+
+**Región de rechazo:** $Z > `r round(z_critico_2, 4)`$
+
+**Criterio de decisión:** 
+
+- Si $Z > `r round(z_critico_2, 4)`$, rechazamos $H_0$
+- Si $Z \leq `r round(z_critico_2, 4)`$, no rechazamos $H_0$
+
+```{r pregunta2-visualizacion, fig.height=4, fig.width=7, echo=FALSE}
+# Visualización de la prueba de hipótesis
+x_values_2 <- seq(-4, 4, length.out = 1000)
+y_values_2 <- dnorm(x_values_2)
+
+# Crear dataframe para ggplot
+df_plot_2 <- data.frame(x = x_values_2, y = y_values_2)
+
+ggplot(df_plot_2, aes(x = x, y = y)) +
+  geom_line(color = "blue", linewidth = 1) +
+  # Región de rechazo (cola derecha)
+  geom_area(data = subset(df_plot_2, x >= z_critico_2), 
+            aes(x = x, y = y), fill = "red", alpha = 0.3) +
+  # Valor crítico
+  geom_vline(xintercept = z_critico_2, color = "red", linetype = "dashed", linewidth = 1) +
+  # Estadístico observado
+  geom_vline(xintercept = z_stat_2, color = "darkgreen", linewidth = 1.2) +
+  # Anotaciones
+  annotate("text", x = z_critico_2, y = 0.3, 
+           label = paste("Z critico =", round(z_critico_2, 2)), 
+           hjust = -0.1, color = "red", size = 4) +
+  annotate("text", x = z_stat_2, y = 0.35, 
+           label = paste("Z observado =", round(z_stat_2, 2)), 
+           hjust = 1.1, color = "darkgreen", size = 4) +
+  annotate("text", x = 3, y = 0.05, 
+           label = "Región de\nrechazo", 
+           color = "red", size = 3.5, fontface = "bold") +
+  labs(title = "Prueba de Hipótesis: Distribución Normal Estándar",
+       subtitle = "Prueba unilateral derecha con alpha = 0.05",
+       x = "Valores Z",
+       y = "Densidad") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+### Conclusión
+
+```{r pregunta2-decision, echo=FALSE}
+if (z_stat_2 > z_critico_2) {
+  decision_2 <- "Se rechaza H0"
+  comparacion_2 <- ">"
+} else {
+  decision_2 <- "No  Se rechaza H0"
+  comparacion_2 <- "\\leq"
+}
+```
+
+**Decisión:** **`r decision_2`**
+
+**Justificación:**
+
+- Estadístico observado: $Z = `r round(z_stat_2, 4)`$
+- Valor crítico: $Z_{\alpha} = `r round(z_critico_2, 4)`$
+- Como $Z_{observado} = `r round(z_stat_2, 4)` `r comparacion_2` `r round(z_critico_2, 4)` = Z_{crítico}$, entonces **`r decision_2`**
+- P-valor = `r round(p_valor_2, 4)` `r ifelse(p_valor_2 < alpha_2, "<", ">")` $\alpha$ = `r alpha_2`
+
+## Pregunta 3. 
+
+Una muestra de 50 lentes utilizadas en anteojos produce un grosor medio muestral de 3.05 mm, y una desviación estándar muestral de 0.34 mm. El promedio verdadero deseado de grosor de tales lentes es de 3.20 mm ¿Sugiere la información que el verdadero promedio de grosor de tales lentes es diferente al grosor deseado? Pruebe usando $\alpha=0.05$
+
+### Hipótesis
+
+$$H_0: \mu = 3.20 \text{ mm}$$
+$$H_1: \mu \neq 3.20 \text{ mm}$$
+
+Esta es una prueba de hipótesis **bilateral** para la media poblacional con **varianza desconocida**. Como el problema no especifica la desviación estándar poblacional, se utilizara la **distribución t de Student**.
+
+### Evidencia muestral
+
+```{r pregunta3-datos, echo=FALSE}
+# Datos del problema
+n_3 <- 50
+x_bar_3 <- 3.05
+s_3 <- 0.34  # Desviacion estandar muestral
+mu_0_3 <- 3.20
+alpha_3 <- 0.05
+gl_3 <- n_3 - 1  # Grados de libertad
+
+# Estadistico de prueba t
+t_stat_3 <- (x_bar_3 - mu_0_3) / (s_3 / sqrt(n_3))
+```
+
+Datos del problema:
+
+- Tamaño de muestra: $n = `r n_3`$
+- Media muestral: $\bar{x} = `r x_bar_3`$ mm
+- Desviación estándar muestral: $s = `r s_3`$ mm
+- Media hipotética: $\mu_0 = `r mu_0_3`$ mm
+- Nivel de significancia: $\alpha = `r alpha_3`$
+- Grados de libertad: $gl = n - 1 = `r gl_3`$
+
+El **estadístico de prueba** se calcula como:
+
+$$t = \frac{\bar{x} - \mu_0}{s / \sqrt{n}} = \frac{`r x_bar_3` - `r mu_0_3`}{`r s_3` / \sqrt{`r n_3`}} = \frac{`r x_bar_3 - mu_0_3`}{`r round(s_3/sqrt(n_3), 4)`} = `r round(t_stat_3, 4)`$$
+
+**Estadístico de prueba observado:** $t = `r round(t_stat_3, 4)`$
+
+### Región de rechazo
+
+```{r pregunta3-region, echo=FALSE}
+# Valores criticos (prueba bilateral)
+t_critico_inf_3 <- qt(alpha_3/2, gl_3)
+t_critico_sup_3 <- qt(1 - alpha_3/2, gl_3)
+
+# p-valor (bilateral)
+p_valor_3 <- 2 * pt(t_stat_3, gl_3)
+```
+
+Para una prueba bilateral con $\alpha = `r alpha_3`$ y $gl = `r gl_3`$:
+
+**Valores críticos:** 
+
+- $t_{\alpha/2, `r gl_3`} = `r round(t_critico_inf_3, 4)`$
+- $t_{1-\alpha/2, `r gl_3`} = `r round(t_critico_sup_3, 4)`$
+
+**P-valor:** $p = `r round(p_valor_3, 4)`$
+
+**Región de rechazo:** $t < `r round(t_critico_inf_3, 4)`$ o $t > `r round(t_critico_sup_3, 4)`$
+
+**Criterio de decisión:** 
+
+- Si $t < `r round(t_critico_inf_3, 4)`$ o $t > `r round(t_critico_sup_3, 4)`$, rechazamos $H_0$
+- Si $`r round(t_critico_inf_3, 4)` \leq t \leq `r round(t_critico_sup_3, 4)`$, no rechazamos $H_0$
+
+```{r pregunta3-visualizacion, fig.height=4, fig.width=7, echo=FALSE}
+# Visualizacion de la prueba de hipotesis
+x_values_3 <- seq(-4, 4, length.out = 1000)
+y_values_3 <- dt(x_values_3, gl_3)
+
+# Crear dataframe para ggplot
+df_plot_3 <- data.frame(x = x_values_3, y = y_values_3)
+
+ggplot(df_plot_3, aes(x = x, y = y)) +
+  geom_line(color = "blue", linewidth = 1) +
+  # Region de rechazo (cola izquierda)
+  geom_area(data = subset(df_plot_3, x <= t_critico_inf_3), 
+            aes(x = x, y = y), fill = "red", alpha = 0.3) +
+  # Region de rechazo (cola derecha)
+  geom_area(data = subset(df_plot_3, x >= t_critico_sup_3), 
+            aes(x = x, y = y), fill = "red", alpha = 0.3) +
+  # Valores criticos
+  geom_vline(xintercept = t_critico_inf_3, color = "red", linetype = "dashed", linewidth = 1) +
+  geom_vline(xintercept = t_critico_sup_3, color = "red", linetype = "dashed", linewidth = 1) +
+  # Estadistico observado
+  geom_vline(xintercept = t_stat_3, color = "darkgreen", linewidth = 1.2) +
+  # Anotaciones
+  annotate("text", x = t_critico_inf_3, y = 0.3, 
+           label = paste("t =", round(t_critico_inf_3, 2)), 
+           hjust = 1.1, color = "red", size = 3.5) +
+  annotate("text", x = t_critico_sup_3, y = 0.3, 
+           label = paste("t =", round(t_critico_sup_3, 2)), 
+           hjust = -0.1, color = "red", size = 3.5) +
+  annotate("text", x = t_stat_3, y = 0.35, 
+           label = paste("t observado =", round(t_stat_3, 2)), 
+           hjust = 0.5, color = "darkgreen", size = 4) +
+  annotate("text", x = -3, y = 0.05, 
+           label = "Rechazo", 
+           color = "red", size = 3.5, fontface = "bold") +
+  annotate("text", x = 3, y = 0.05, 
+           label = "Rechazo", 
+           color = "red", size = 3.5, fontface = "bold") +
+  labs(title = paste("Prueba de Hipotesis: Distribucion t de Student (gl =", gl_3, ")"),
+       subtitle = "Prueba bilateral con alpha = 0.05",
+       x = "Valores t",
+       y = "Densidad") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+### Conclusión
+
+```{r pregunta3-decision, echo=FALSE}
+if (t_stat_3 < t_critico_inf_3 || t_stat_3 > t_critico_sup_3) {
+  decision_3 <- "Se rechaza H0"
+  comparacion_3 <- "en"
+} else {
+  decision_3 <- "No  Se rechaza H0"
+  comparacion_3 <- "fuera de"
+}
+```
+
+**Decisión:** **`r decision_3`**
+
+**Justificación:**
+
+- Estadístico observado: $t = `r round(t_stat_3, 4)`$
+- Valores críticos: $t_{\alpha/2} = `r round(t_critico_inf_3, 4)`$ y $t_{1-\alpha/2} = `r round(t_critico_sup_3, 4)`$
+- Como $t_{observado} = `r round(t_stat_3, 4)`$ está **`r comparacion_3` la región de rechazo**, entonces **`r decision_3`**
+- P-valor = `r round(p_valor_3, 4)` `r ifelse(p_valor_3 < alpha_3, "<", ">")` $\alpha$ = `r alpha_3`
+
+
+
+## Pregunta 4. 
+
+El método llamado "enderezamiento por rodillo" sirve para enderezar alambre antes de ser enrollado mediante el uso de un resorte. Supongamos que se selecciona una muestra de 16 alambres y que cada uno se prueba para determinar su resistencia a la tensión ($N/mm^2$ ). La media muestral resultante y la desviación estándar muestral son 2160 y 30, respectivamente. La media de resistencia a la tensión para resortes hechos usando enderezamiento con husillo es 2150 $N/mm^2$. Pruebe si la resistencia media de la tensión para el método de rodillo excede de 2150. Utilice $\alpha= 0.05$.
+
+### Hipótesis
+
+$$H_0: \mu \leq 2150 \text{ } N/mm^2$$
+$$H_1: \mu > 2150 \text{ } N/mm^2$$
+
+Esta es una prueba de hipótesis **unilateral derecha** para la media poblacional con **varianza desconocida**. Como el problema no especifica la desviación estándar poblacional, se utilizara la **distribución t de Student**.
+
+### Evidencia muestral
+
+```{r pregunta4-datos, echo=FALSE}
+# Datos del problema
+n_4 <- 16
+x_bar_4 <- 2160
+s_4 <- 30  # Desviacion estandar muestral
+mu_0_4 <- 2150
+alpha_4 <- 0.05
+gl_4 <- n_4 - 1  # Grados de libertad
+
+# Estadistico de prueba t
+t_stat_4 <- (x_bar_4 - mu_0_4) / (s_4 / sqrt(n_4))
+```
+
+Datos del problema:
+
+- Tamaño de muestra: $n = `r n_4`$ alambres
+- Media muestral: $\bar{x} = `r x_bar_4`$ $N/mm^2$
+- Desviación estándar muestral: $s = `r s_4`$ $N/mm^2$
+- Media hipotética: $\mu_0 = `r mu_0_4`$ $N/mm^2$
+- Nivel de significancia: $\alpha = `r alpha_4`$
+- Grados de libertad: $gl = n - 1 = `r gl_4`$
+
+El **estadístico de prueba** se calcula como:
+
+$$t = \frac{\bar{x} - \mu_0}{s / \sqrt{n}} = \frac{`r x_bar_4` - `r mu_0_4`}{`r s_4` / \sqrt{`r n_4`}} = \frac{`r x_bar_4 - mu_0_4`}{`r round(s_4/sqrt(n_4), 4)`} = `r round(t_stat_4, 4)`$$
+
+**Estadístico de prueba observado:** $t = `r round(t_stat_4, 4)`$
+
+### Región de rechazo
+
+```{r pregunta4-region, echo=FALSE}
+# Valor critico (cola derecha)
+t_critico_4 <- qt(1 - alpha_4, gl_4)
+
+# p-valor (cola derecha)
+p_valor_4 <- 1 - pt(t_stat_4, gl_4)
+```
+
+Para una prueba unilateral derecha con $\alpha = `r alpha_4`$ y $gl = `r gl_4`$:
+
+**Valor crítico:** $t_{1-\alpha, `r gl_4`} = `r round(t_critico_4, 4)`$
+
+**P-valor:** $p = `r round(p_valor_4, 4)`$
+
+**Región de rechazo:** $t > `r round(t_critico_4, 4)`$
+
+**Criterio de decisión:** 
+
+- Si $t > `r round(t_critico_4, 4)`$, rechazamos $H_0$
+- Si $t \leq `r round(t_critico_4, 4)`$, no rechazamos $H_0$
+
+```{r pregunta4-visualizacion, fig.height=4, fig.width=7, echo=FALSE}
+# Visualizacion de la prueba de hipotesis
+x_values_4 <- seq(-4, 4, length.out = 1000)
+y_values_4 <- dt(x_values_4, gl_4)
+
+# Crear dataframe para ggplot
+df_plot_4 <- data.frame(x = x_values_4, y = y_values_4)
+
+ggplot(df_plot_4, aes(x = x, y = y)) +
+  geom_line(color = "blue", linewidth = 1) +
+  # Region de rechazo (cola derecha)
+  geom_area(data = subset(df_plot_4, x >= t_critico_4), 
+            aes(x = x, y = y), fill = "red", alpha = 0.3) +
+  # Valor critico
+  geom_vline(xintercept = t_critico_4, color = "red", linetype = "dashed", linewidth = 1) +
+  # Estadistico observado
+  geom_vline(xintercept = t_stat_4, color = "darkgreen", linewidth = 1.2) +
+  # Anotaciones
+  annotate("text", x = t_critico_4, y = 0.3, 
+           label = paste("t critico =", round(t_critico_4, 2)), 
+           hjust = -0.1, color = "red", size = 4) +
+  annotate("text", x = t_stat_4, y = 0.35, 
+           label = paste("t observado =", round(t_stat_4, 2)), 
+           hjust = ifelse(t_stat_4 > t_critico_4, 1.1, -0.1), 
+           color = "darkgreen", size = 4) +
+  annotate("text", x = 3, y = 0.05, 
+           label = "Region de\nrechazo", 
+           color = "red", size = 3.5, fontface = "bold") +
+  labs(title = paste("Prueba de Hipotesis: Distribucion t de Student (gl =", gl_4, ")"),
+       subtitle = "Prueba unilateral derecha con alpha = 0.05",
+       x = "Valores t",
+       y = "Densidad") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+### Conclusión
+
+```{r pregunta4-decision, echo=FALSE}
+if (t_stat_4 > t_critico_4) {
+  decision_4 <- "Se rechaza H0"
+  comparacion_4 <- ">"
+} else {
+  decision_4 <- "No  Se rechaza H0"
+  comparacion_4 <- "\\leq"
+}
+```
+
+**Decisión:** **`r decision_4`**
+
+**Justificación:**
+
+- Estadístico observado: $t = `r round(t_stat_4, 4)`$
+- Valor crítico: $t_{1-\alpha} = `r round(t_critico_4, 4)`$
+- Como $t_{observado} = `r round(t_stat_4, 4)` `r comparacion_4` `r round(t_critico_4, 4)` = t_{crítico}$, entonces **`r decision_4`**
+- P-valor = `r round(p_valor_4, 4)` `r ifelse(p_valor_4 < alpha_4, "<", ">")` $\alpha$ = `r alpha_4`
+
+## Pregunta 5.
+
+Las personas que tienen síndrome de Reynaud están propensas a sufrir un repentino deterioro de circulación sanguínea en los dedos de manos y pies. En un experimento para estudiar la magnitud de este deterioro, cada persona introdujo su dedo índice en agua y se midió la salida resultante de calor ($cla/cm^2/min$). Para $n_1=10$ personas con el síndrome, el promedio de salida de calor fue $\bar{x}_1=0.64$ y; para $n_2=10$, pacientes que no tienen el padecimiento, el promedio de salida fue $\bar{x}_2 = 2.05$. Denotemos por $\mu_1$ la media poblacional para el caso de personas con el síndrome y $\mu_2$ la media poblacional para el caso de personas sin el síndrome. Pruebe la hipótesis donde se presuma que la diferencia entre $\mu_1$ y $\mu_2$ sea inferior a $-1 (cla/cm^2 /min)$. Supongamos que las dos distribuciones de salida de calor son normales con $\sigma_1=0.2$ y $\sigma_2= 0.4$. Considere un $\alpha=0.05$.
+
+### Hipótesis
+
+$$H_0: \mu_1 - \mu_2 \geq -1 \text{ } cla/cm^2/min$$
+$$H_1: \mu_1 - \mu_2 < -1 \text{ } cla/cm^2/min$$
+
+Esta es una prueba de hipótesis **unilateral izquierda** para la **diferencia entre dos medias poblacionales** con varianzas conocidas. Como conocemos las desviaciones estándar poblacionales, se utilizare la **distribución normal estándar (Z)**.
+
+### Evidencia muestral
+
+```{r pregunta5-datos, echo=FALSE}
+# Datos del problema
+# Grupo 1: Personas con sindrome
+n_5_1 <- 10
+x_bar_5_1 <- 0.64
+sigma_5_1 <- 0.2
+
+# Grupo 2: Personas sin sindrome
+n_5_2 <- 10
+x_bar_5_2 <- 2.05
+sigma_5_2 <- 0.4
+
+# Parametros de la prueba
+delta_0_5 <- -1  # Diferencia hipotetica
+alpha_5 <- 0.05
+
+# Diferencia observada
+diff_observada_5 <- x_bar_5_1 - x_bar_5_2
+
+# Error estandar de la diferencia
+se_diff_5 <- sqrt((sigma_5_1^2 / n_5_1) + (sigma_5_2^2 / n_5_2))
+
+# Estadistico de prueba Z
+z_stat_5 <- (diff_observada_5 - delta_0_5) / se_diff_5
+```
+
+Datos del problema:
+
+**Grupo 1 (con síndrome de Reynaud):**
+
+- Tamaño de muestra: $n_1 = `r n_5_1`$
+- Media muestral: $\bar{x}_1 = `r x_bar_5_1`$ $cla/cm^2/min$
+- Desviación estándar poblacional: $\sigma_1 = `r sigma_5_1`$ $cla/cm^2/min$
+
+**Grupo 2 (sin síndrome):**
+
+- Tamaño de muestra: $n_2 = `r n_5_2`$
+- Media muestral: $\bar{x}_2 = `r x_bar_5_2`$ $cla/cm^2/min$
+- Desviación estándar poblacional: $\sigma_2 = `r sigma_5_2`$ $cla/cm^2/min$
+
+**Parámetros de la prueba:**
+
+- Diferencia hipotética: $\delta_0 = `r delta_0_5`$ $cla/cm^2/min$
+- Nivel de significancia: $\alpha = `r alpha_5`$
+- Diferencia observada: $\bar{x}_1 - \bar{x}_2 = `r diff_observada_5`$ $cla/cm^2/min$
+
+El **estadístico de prueba** se calcula como:
+
+$$Z = \frac{(\bar{x}_1 - \bar{x}_2) - \delta_0}{\sqrt{\frac{\sigma_1^2}{n_1} + \frac{\sigma_2^2}{n_2}}}$$
+
+$$Z = \frac{(`r x_bar_5_1` - `r x_bar_5_2`) - (`r delta_0_5`)}{\sqrt{\frac{`r sigma_5_1`^2}{`r n_5_1`} + \frac{`r sigma_5_2`^2}{`r n_5_2`}}} = \frac{`r diff_observada_5` - (`r delta_0_5`)}{\sqrt{`r round((sigma_5_1^2 / n_5_1) + (sigma_5_2^2 / n_5_2), 4)`}} = \frac{`r round(diff_observada_5 - delta_0_5, 4)`}{`r round(se_diff_5, 4)`} = `r round(z_stat_5, 4)`$$
+
+**Estadístico de prueba observado:** $Z = `r round(z_stat_5, 4)`$
+
+### Región de rechazo
+
+```{r pregunta5-region, echo=FALSE}
+# Valor critico (cola izquierda)
+z_critico_5 <- qnorm(alpha_5)
+
+# p-valor (cola izquierda)
+p_valor_5 <- pnorm(z_stat_5)
+```
+
+Para una prueba unilateral izquierda con $\alpha = `r alpha_5`$:
+
+**Valor crítico:** $Z_{\alpha} = Z_{`r alpha_5`} = `r round(z_critico_5, 4)`$
+
+**P-valor:** $p = `r format(p_valor_5, scientific = TRUE, digits = 4)`$
+
+**Región de rechazo:** $Z < `r round(z_critico_5, 4)`$
+
+**Criterio de decisión:** 
+
+- Si $Z < `r round(z_critico_5, 4)`$, rechazamos $H_0$
+- Si $Z \geq `r round(z_critico_5, 4)`$, no rechazamos $H_0$
+
+```{r pregunta5-visualizacion, fig.height=4, fig.width=7, echo=FALSE}
+# Visualizacion de la prueba de hipotesis
+x_values_5 <- seq(-4, 4, length.out = 1000)
+y_values_5 <- dnorm(x_values_5)
+
+# Crear dataframe para ggplot
+df_plot_5 <- data.frame(x = x_values_5, y = y_values_5)
+
+ggplot(df_plot_5, aes(x = x, y = y)) +
+  geom_line(color = "blue", linewidth = 1) +
+  # Region de rechazo (cola izquierda)
+  geom_area(data = subset(df_plot_5, x <= z_critico_5), 
+            aes(x = x, y = y), fill = "red", alpha = 0.3) +
+  # Valor critico
+  geom_vline(xintercept = z_critico_5, color = "red", linetype = "dashed", linewidth = 1) +
+  # Estadistico observado
+  geom_vline(xintercept = z_stat_5, color = "darkgreen", linewidth = 1.2) +
+  # Anotaciones
+  annotate("text", x = z_critico_5, y = 0.3, 
+           label = paste("Z critico =", round(z_critico_5, 2)), 
+           hjust = 1.1, color = "red", size = 4) +
+  annotate("text", x = z_stat_5, y = 0.35, 
+           label = paste("Z observado =", round(z_stat_5, 2)), 
+           hjust = 1.1, color = "darkgreen", size = 4) +
+  annotate("text", x = -3, y = 0.05, 
+           label = "Region de\nrechazo", 
+           color = "red", size = 3.5, fontface = "bold") +
+  labs(title = "Prueba de Hipotesis: Diferencia entre Dos Medias",
+       subtitle = "Prueba unilateral izquierda con alpha = 0.05",
+       x = "Valores Z",
+       y = "Densidad") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+### Conclusión
+
+```{r pregunta5-decision, echo=FALSE}
+if (z_stat_5 < z_critico_5) {
+  decision_5 <- "Se rechaza H0"
+  comparacion_5 <- "<"
+} else {
+  decision_5 <- "No  Se rechaza H0"
+  comparacion_5 <- "\\geq"
+}
+```
+
+**Decisión:** **`r decision_5`**
+
+**Justificación:**
+
+- Estadístico observado: $Z = `r round(z_stat_5, 4)`$
+- Valor crítico: $Z_{\alpha} = `r round(z_critico_5, 4)`$
+- Diferencia observada: $\bar{x}_1 - \bar{x}_2 = `r round(diff_observada_5, 4)`$ $cla/cm^2/min$
+- Como $Z_{observado} = `r round(z_stat_5, 4)` `r comparacion_5` `r round(z_critico_5, 4)` = Z_{crítico}$, entonces **`r decision_5`**
+- P-valor = `r format(p_valor_5, scientific = TRUE, digits = 4)` `r ifelse(p_valor_5 < alpha_5, "<", ">")` $\alpha$ = `r alpha_5`
+
+
+## Pregunta 6. 
+
+Suponga que $\mu_A$ y $\mu_B$ son las verdaderas distancias medias de parada a velocidad de 50 mph para automóviles de cierto tipo. Dichos autos están equipados con dos tipos diferentes de sistemas de frenos: el sistema de freno A, que en 6 pruebas tuvo una estimación de la media igual a 2 m y una estimación de la desviación estándar igual a 1.8 m. Mientras que el sistema de freno B, en 6 pruebas, tuvo una estimación de la media igual a 2.5 m y una estimación de la desviación estándar igual a 2.2 m. Utilice la prueba t al nivel de significancia de 0.01 para probar si la media de la distancia de parada del sistema de freno B excede por más de 0.5 m a la media de la distancia de parada del sistema A.
+
+### Hipótesis
+
+$$H_0: \mu_B - \mu_A \leq 0.5 \text{ m}$$
+$$H_1: \mu_B - \mu_A > 0.5 \text{ m}$$
+
+Esta es una prueba de hipótesis **unilateral derecha** para la **diferencia entre dos medias poblacionales** con varianzas desconocidas. Como no conocemos las varianzas poblacionales, se utilizara la **distribución t de Student** con varianza combinada (pooled variance).
+
+### Evidencia muestral
+
+```{r pregunta6-datos, echo=FALSE}
+# Datos del problema
+# Sistema A
+n_6_A <- 6
+x_bar_6_A <- 2
+s_6_A <- 1.8
+
+# Sistema B
+n_6_B <- 6
+x_bar_6_B <- 2.5
+s_6_B <- 2.2
+
+# Parametros de la prueba
+delta_0_6 <- 0.5  # Diferencia hipotetica
+alpha_6 <- 0.01
+
+# Grados de libertad
+gl_6 <- n_6_A + n_6_B - 2
+
+# Varianza combinada (pooled variance)
+s_p_cuadrado_6 <- ((n_6_A - 1) * s_6_A^2 + (n_6_B - 1) * s_6_B^2) / gl_6
+s_p_6 <- sqrt(s_p_cuadrado_6)
+
+# Error estandar de la diferencia
+se_diff_6 <- s_p_6 * sqrt(1/n_6_A + 1/n_6_B)
+
+# Diferencia observada
+diff_observada_6 <- x_bar_6_B - x_bar_6_A
+
+# Estadistico de prueba t
+t_stat_6 <- (diff_observada_6 - delta_0_6) / se_diff_6
+```
+
+Datos del problema:
+
+**Sistema de freno A:**
+
+- Tamaño de muestra: $n_A = `r n_6_A`$
+- Media muestral: $\bar{x}_A = `r x_bar_6_A`$ m
+- Desviación estándar muestral: $s_A = `r s_6_A`$ m
+
+**Sistema de freno B:**
+
+- Tamaño de muestra: $n_B = `r n_6_B`$
+- Media muestral: $\bar{x}_B = `r x_bar_6_B`$ m
+- Desviación estándar muestral: $s_B = `r s_6_B`$ m
+
+**Parámetros de la prueba:**
+
+- Diferencia hipotética: $\delta_0 = `r delta_0_6`$ m
+- Nivel de significancia: $\alpha = `r alpha_6`$
+- Grados de libertad: $gl = n_A + n_B - 2 = `r gl_6`$
+- Diferencia observada: $\bar{x}_B - \bar{x}_A = `r diff_observada_6`$ m
+
+**Varianza combinada:**
+
+$$s_p^2 = \frac{(n_A - 1)s_A^2 + (n_B - 1)s_B^2}{n_A + n_B - 2} = \frac{(`r n_6_A - 1`)(`r s_6_A`)^2 + (`r n_6_B - 1`)(`r s_6_B`)^2}{`r gl_6`} = `r round(s_p_cuadrado_6, 4)`$$
+
+$$s_p = `r round(s_p_6, 4)` \text{ m}$$
+
+El **estadístico de prueba** se calcula como:
+
+$$t = \frac{(\bar{x}_B - \bar{x}_A) - \delta_0}{s_p \sqrt{\frac{1}{n_A} + \frac{1}{n_B}}}$$
+
+$$t = \frac{(`r x_bar_6_B` - `r x_bar_6_A`) - `r delta_0_6`}{`r round(s_p_6, 4)` \times \sqrt{\frac{1}{`r n_6_A`} + \frac{1}{`r n_6_B`}}} = \frac{`r diff_observada_6` - `r delta_0_6`}{`r round(se_diff_6, 4)`} = `r round(t_stat_6, 4)`$$
+
+**Estadístico de prueba observado:** $t = `r round(t_stat_6, 4)`$
+
+### Región de rechazo
+
+```{r pregunta6-region, echo=FALSE}
+# Valor critico (cola derecha)
+t_critico_6 <- qt(1 - alpha_6, gl_6)
+
+# p-valor (cola derecha)
+p_valor_6 <- 1 - pt(t_stat_6, gl_6)
+```
+
+Para una prueba unilateral derecha con $\alpha = `r alpha_6`$ y $gl = `r gl_6`$:
+
+**Valor crítico:** $t_{1-\alpha, `r gl_6`} = `r round(t_critico_6, 4)`$
+
+**P-valor:** $p = `r round(p_valor_6, 4)`$
+
+**Región de rechazo:** $t > `r round(t_critico_6, 4)`$
+
+**Criterio de decisión:** 
+
+- Si $t > `r round(t_critico_6, 4)`$, rechazamos $H_0$
+- Si $t \leq `r round(t_critico_6, 4)`$, no rechazamos $H_0$
+
+```{r pregunta6-visualizacion, fig.height=4, fig.width=7, echo=FALSE}
+# Visualizacion de la prueba de hipotesis
+x_values_6 <- seq(-4, 4, length.out = 1000)
+y_values_6 <- dt(x_values_6, gl_6)
+
+# Crear dataframe para ggplot
+df_plot_6 <- data.frame(x = x_values_6, y = y_values_6)
+
+ggplot(df_plot_6, aes(x = x, y = y)) +
+  geom_line(color = "blue", linewidth = 1) +
+  # Region de rechazo (cola derecha)
+  geom_area(data = subset(df_plot_6, x >= t_critico_6), 
+            aes(x = x, y = y), fill = "red", alpha = 0.3) +
+  # Valor critico
+  geom_vline(xintercept = t_critico_6, color = "red", linetype = "dashed", linewidth = 1) +
+  # Estadistico observado
+  geom_vline(xintercept = t_stat_6, color = "darkgreen", linewidth = 1.2) +
+  # Anotaciones
+  annotate("text", x = t_critico_6, y = 0.3, 
+           label = paste("t critico =", round(t_critico_6, 2)), 
+           hjust = ifelse(t_stat_6 < t_critico_6, -0.1, 1.1), 
+           color = "red", size = 4) +
+  annotate("text", x = t_stat_6, y = 0.35, 
+           label = paste("t observado =", round(t_stat_6, 2)), 
+           hjust = ifelse(t_stat_6 < t_critico_6, 1.1, -0.1), 
+           color = "darkgreen", size = 4) +
+  annotate("text", x = 3, y = 0.05, 
+           label = "Region de\nrechazo", 
+           color = "red", size = 3.5, fontface = "bold") +
+  labs(title = paste("Prueba de Hipotesis: Diferencia entre Dos Medias (gl =", gl_6, ")"),
+       subtitle = "Prueba unilateral derecha con alpha = 0.01",
+       x = "Valores t",
+       y = "Densidad") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+### Conclusión
+
+```{r pregunta6-decision, echo=FALSE}
+if (t_stat_6 > t_critico_6) {
+  decision_6 <- "Se rechaza H0"
+  comparacion_6 <- ">"
+} else {
+  decision_6 <- "No  Se rechaza H0"
+  comparacion_6 <- "\\leq"
+}
+```
+
+**Decisión:** **`r decision_6`**
+
+**Justificación:**
+
+- Estadístico observado: $t = `r round(t_stat_6, 4)`$
+- Valor crítico: $t_{1-\alpha} = `r round(t_critico_6, 4)`$
+- Diferencia observada: $\bar{x}_B - \bar{x}_A = `r round(diff_observada_6, 4)`$ m
+- Como $t_{observado} = `r round(t_stat_6, 4)` `r comparacion_6` `r round(t_critico_6, 4)` = t_{crítico}$, entonces **`r decision_6`**
+- P-valor = `r round(p_valor_6, 4)` `r ifelse(p_valor_6 < alpha_6, "<", ">")` $\alpha$ = `r alpha_6`
+
+
+## Pregunta 7. 
+
+Un fabricante de baterías para automóvil afirma que sus baterías durarán, en promedio, tres años con una varianza de un año y medio. Si con cinco de estas baterías se calcula una varianza muestral de 1.66, pruebe si la afirmación del fabricante de que $\sigma^2=1.5$ es válida. Suponga que la población de duraciones de las baterías se distribuye de forma aproximadamente normal. Utilice $\alpha=0.02$
+
+### Hipótesis
+
+$$H_0: \sigma^2 = 1.5 \text{ años}^2$$
+$$H_1: \sigma^2 \neq 1.5 \text{ años}^2$$
+
+Esta es una prueba de hipótesis **bilateral** para la **varianza poblacional**. Como la población se distribuye de forma aproximadamente normal, se utilizara la **distribución Chi-cuadrado** ($\chi^2$).
+
+### Evidencia muestral
+
+```{r pregunta7-datos, echo=FALSE}
+# Datos del problema
+n_7 <- 5
+s_cuadrado_7 <- 1.66  # Varianza muestral
+sigma_cuadrado_0_7 <- 1.5  # Varianza hipotetica
+alpha_7 <- 0.02
+
+# Grados de libertad
+gl_7 <- n_7 - 1
+
+# Estadistico de prueba Chi-cuadrado
+chi_stat_7 <- (gl_7 * s_cuadrado_7) / sigma_cuadrado_0_7
+```
+
+Datos del problema:
+
+- Tamaño de muestra: $n = `r n_7`$ baterías
+- Varianza muestral: $s^2 = `r s_cuadrado_7`$ años²
+- Varianza hipotética: $\sigma_0^2 = `r sigma_cuadrado_0_7`$ años²
+- Nivel de significancia: $\alpha = `r alpha_7`$
+- Grados de libertad: $gl = n - 1 = `r gl_7`$
+
+El **estadístico de prueba** se calcula como:
+
+$$\chi^2 = \frac{(n-1)s^2}{\sigma_0^2} = \frac{`r gl_7` \times `r s_cuadrado_7`}{`r sigma_cuadrado_0_7`} = \frac{`r gl_7 * s_cuadrado_7`}{`r sigma_cuadrado_0_7`} = `r round(chi_stat_7, 4)`$$
+
+**Estadístico de prueba observado:** $\chi^2 = `r round(chi_stat_7, 4)`$
+
+### Región de rechazo
+
+```{r pregunta7-region, echo=FALSE}
+# Valores criticos (prueba bilateral)
+chi_critico_inf_7 <- qchisq(alpha_7/2, gl_7)
+chi_critico_sup_7 <- qchisq(1 - alpha_7/2, gl_7)
+
+# p-valor (bilateral)
+if (chi_stat_7 < gl_7) {
+  # Cola izquierda
+  p_valor_7 <- 2 * pchisq(chi_stat_7, gl_7)
+} else {
+  # Cola derecha
+  p_valor_7 <- 2 * (1 - pchisq(chi_stat_7, gl_7))
+}
+```
+
+Para una prueba bilateral con $\alpha = `r alpha_7`$ y $gl = `r gl_7`$:
+
+**Valores críticos:**
+
+- $\chi^2_{\alpha/2, `r gl_7`} = \chi^2_{`r alpha_7/2`, `r gl_7`} = `r round(chi_critico_inf_7, 4)`$
+- $\chi^2_{1-\alpha/2, `r gl_7`} = \chi^2_{`r 1-alpha_7/2`, `r gl_7`} = `r round(chi_critico_sup_7, 4)`$
+
+**P-valor:** $p = `r round(p_valor_7, 4)`$
+
+**Región de rechazo:** $\chi^2 < `r round(chi_critico_inf_7, 4)`$ o $\chi^2 > `r round(chi_critico_sup_7, 4)`$
+
+**Criterio de decisión:** 
+
+- Si $\chi^2 < `r round(chi_critico_inf_7, 4)`$ o $\chi^2 > `r round(chi_critico_sup_7, 4)`$, rechazamos $H_0$
+- Si $`r round(chi_critico_inf_7, 4)` \leq \chi^2 \leq `r round(chi_critico_sup_7, 4)`$, no rechazamos $H_0$
+
+```{r pregunta7-visualizacion, fig.height=4, fig.width=7, echo=FALSE}
+# Visualizacion de la prueba de hipotesis
+x_values_7 <- seq(0, 15, length.out = 1000)
+y_values_7 <- dchisq(x_values_7, gl_7)
+
+# Crear dataframe para ggplot
+df_plot_7 <- data.frame(x = x_values_7, y = y_values_7)
+
+ggplot(df_plot_7, aes(x = x, y = y)) +
+  geom_line(color = "blue", linewidth = 1) +
+  # Region de rechazo (cola izquierda)
+  geom_area(data = subset(df_plot_7, x <= chi_critico_inf_7), 
+            aes(x = x, y = y), fill = "red", alpha = 0.3) +
+  # Region de rechazo (cola derecha)
+  geom_area(data = subset(df_plot_7, x >= chi_critico_sup_7), 
+            aes(x = x, y = y), fill = "red", alpha = 0.3) +
+  # Valores criticos
+  geom_vline(xintercept = chi_critico_inf_7, color = "red", linetype = "dashed", linewidth = 1) +
+  geom_vline(xintercept = chi_critico_sup_7, color = "red", linetype = "dashed", linewidth = 1) +
+  # Estadistico observado
+  geom_vline(xintercept = chi_stat_7, color = "darkgreen", linewidth = 1.2) +
+  # Anotaciones
+  annotate("text", x = chi_critico_inf_7, y = max(y_values_7) * 0.5, 
+           label = paste("Chi2 =", round(chi_critico_inf_7, 2)), 
+           hjust = 1.1, color = "red", size = 3.5) +
+  annotate("text", x = chi_critico_sup_7, y = max(y_values_7) * 0.5, 
+           label = paste("Chi2 =", round(chi_critico_sup_7, 2)), 
+           hjust = -0.1, color = "red", size = 3.5) +
+  annotate("text", x = chi_stat_7, y = max(y_values_7) * 0.6, 
+           label = paste("Chi2 obs =", round(chi_stat_7, 2)), 
+           hjust = -0.1, color = "darkgreen", size = 4) +
+  annotate("text", x = chi_critico_inf_7 - 0.3, y = max(y_values_7) * 0.1, 
+           label = "Rechazo", 
+           color = "red", size = 3, fontface = "bold") +
+  annotate("text", x = chi_critico_sup_7 + 1, y = max(y_values_7) * 0.1, 
+           label = "Rechazo", 
+           color = "red", size = 3, fontface = "bold") +
+  labs(title = paste("Prueba de Hipotesis: Distribucion Chi-cuadrado (gl =", gl_7, ")"),
+       subtitle = "Prueba bilateral para varianza con alpha = 0.02",
+       x = expression(paste("Valores ", chi^2)),
+       y = "Densidad") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+### Conclusión
+
+```{r pregunta7-decision, echo=FALSE}
+if (chi_stat_7 < chi_critico_inf_7 || chi_stat_7 > chi_critico_sup_7) {
+  decision_7 <- "Se rechaza H0"
+  ubicacion_7 <- "en"
+} else {
+  decision_7 <- "No  Se rechaza H0"
+  ubicacion_7 <- "fuera de"
+}
+```
+
+**Decisión:** **`r decision_7`**
+
+**Justificación:**
+
+- Estadístico observado: $\chi^2 = `r round(chi_stat_7, 4)`$
+- Valores críticos: $\chi^2_{inferior} = `r round(chi_critico_inf_7, 4)`$ y $\chi^2_{superior} = `r round(chi_critico_sup_7, 4)`$
+- Como $\chi^2_{observado} = `r round(chi_stat_7, 4)`$ está **`r ubicacion_7` la región de rechazo**, entonces **`r decision_7`**
+- P-valor = `r round(p_valor_7, 4)` `r ifelse(p_valor_7 < alpha_7, "<", ">")` $\alpha$ = `r alpha_7`
+
+
+## Pregunta 8. 
+
+Los registros vehiculares de un estado de la república mexicana indican que el $70\%$ de los vehículos sometidos a la verificación de emisiones la superaron al primer intento. Una prueba aleatoria de 200 automóviles probados en una ciudad en particular (del mismo estado) durante el año actual indica que 156 pasaron en la prueba inicial ¿Esta información sugiere que la verdadera proporción de esta ciudad durante el año actual difiere de la proporción en el ámbito estatal? Pruebe las hipótesis pertinentes usando $\alpha=0.05$
+
+### Hipótesis
+
+$$H_0: p = 0.70$$
+$$H_1: p \neq 0.70$$
+
+Esta es una prueba de hipótesis **bilateral** para una **proporción poblacional**. Como el tamaño de muestra es grande ($n = 200$), se utilizara la **aproximación normal** para proporciones.
+
+### Evidencia muestral
+
+```{r pregunta8-datos, echo=FALSE}
+# Datos del problema
+n_8 <- 200
+x_8 <- 156  # Numero de exitos (pasaron la verificacion)
+p_0_8 <- 0.70  # Proporcion hipotetica (estatal)
+alpha_8 <- 0.05
+
+# Proporcion muestral
+p_hat_8 <- x_8 / n_8
+
+# Error estandar bajo H0
+se_p_8 <- sqrt((p_0_8 * (1 - p_0_8)) / n_8)
+
+# Estadistico de prueba Z
+z_stat_8 <- (p_hat_8 - p_0_8) / se_p_8
+
+# Verificar condiciones para aproximacion normal
+np_8 <- n_8 * p_0_8
+nq_8 <- n_8 * (1 - p_0_8)
+```
+
+Datos del problema:
+
+- Tamaño de muestra: $n = `r n_8`$ automóviles
+- Número de éxitos: $x = `r x_8`$ (pasaron la verificación)
+- Proporción muestral: $\hat{p} = \frac{x}{n} = \frac{`r x_8`}{`r n_8`} = `r round(p_hat_8, 4)`$
+- Proporción hipotética: $p_0 = `r p_0_8`$
+- Nivel de significancia: $\alpha = `r alpha_8`$
+
+
+El **estadístico de prueba** se calcula como:
+
+$$Z = \frac{\hat{p} - p_0}{\sqrt{\frac{p_0(1-p_0)}{n}}} = \frac{`r round(p_hat_8, 4)` - `r p_0_8`}{\sqrt{\frac{`r p_0_8`(`r 1-p_0_8`)}{`r n_8`}}} = \frac{`r round(p_hat_8 - p_0_8, 4)`}{`r round(se_p_8, 4)`} = `r round(z_stat_8, 4)`$$
+
+**Estadístico de prueba observado:** $Z = `r round(z_stat_8, 4)`$
+
+### Región de rechazo
+
+```{r pregunta8-region, echo=FALSE}
+# Valores criticos (prueba bilateral)
+z_critico_inf_8 <- qnorm(alpha_8/2)
+z_critico_sup_8 <- qnorm(1 - alpha_8/2)
+
+# p-valor (bilateral)
+p_valor_8 <- 2 * (1 - pnorm(abs(z_stat_8)))
+```
+
+Para una prueba bilateral con $\alpha = `r alpha_8`$:
+
+**Valores críticos:**
+
+- $Z_{\alpha/2} = Z_{`r alpha_8/2`} = `r round(z_critico_inf_8, 4)`$
+- $Z_{1-\alpha/2} = Z_{`r 1-alpha_8/2`} = `r round(z_critico_sup_8, 4)`$
+
+**P-valor:** $p = `r round(p_valor_8, 4)`$
+
+**Región de rechazo:** $Z < `r round(z_critico_inf_8, 4)`$ o $Z > `r round(z_critico_sup_8, 4)`$
+
+**Criterio de decisión:** 
+
+- Si $Z < `r round(z_critico_inf_8, 4)`$ o $Z > `r round(z_critico_sup_8, 4)`$, rechazamos $H_0$
+- Si $`r round(z_critico_inf_8, 4)` \leq Z \leq `r round(z_critico_sup_8, 4)`$, no rechazamos $H_0$
+
+```{r pregunta8-visualizacion, fig.height=4, fig.width=7, echo=FALSE}
+# Visualizacion de la prueba de hipotesis
+x_values_8 <- seq(-4, 4, length.out = 1000)
+y_values_8 <- dnorm(x_values_8)
+
+# Crear dataframe para ggplot
+df_plot_8 <- data.frame(x = x_values_8, y = y_values_8)
+
+ggplot(df_plot_8, aes(x = x, y = y)) +
+  geom_line(color = "blue", linewidth = 1) +
+  # Region de rechazo (cola izquierda)
+  geom_area(data = subset(df_plot_8, x <= z_critico_inf_8), 
+            aes(x = x, y = y), fill = "red", alpha = 0.3) +
+  # Region de rechazo (cola derecha)
+  geom_area(data = subset(df_plot_8, x >= z_critico_sup_8), 
+            aes(x = x, y = y), fill = "red", alpha = 0.3) +
+  # Valores criticos
+  geom_vline(xintercept = z_critico_inf_8, color = "red", linetype = "dashed", linewidth = 1) +
+  geom_vline(xintercept = z_critico_sup_8, color = "red", linetype = "dashed", linewidth = 1) +
+  # Estadistico observado
+  geom_vline(xintercept = z_stat_8, color = "darkgreen", linewidth = 1.2) +
+  # Anotaciones
+  annotate("text", x = z_critico_inf_8, y = 0.3, 
+           label = paste("Z =", round(z_critico_inf_8, 2)), 
+           hjust = 1.1, color = "red", size = 3.5) +
+  annotate("text", x = z_critico_sup_8, y = 0.3, 
+           label = paste("Z =", round(z_critico_sup_8, 2)), 
+           hjust = -0.1, color = "red", size = 3.5) +
+  annotate("text", x = z_stat_8, y = 0.35, 
+           label = paste("Z obs =", round(z_stat_8, 2)), 
+           hjust = -0.1, color = "darkgreen", size = 4) +
+  annotate("text", x = -3, y = 0.05, 
+           label = "Rechazo", 
+           color = "red", size = 3.5, fontface = "bold") +
+  annotate("text", x = 3, y = 0.05, 
+           label = "Rechazo", 
+           color = "red", size = 3.5, fontface = "bold") +
+  labs(title = "Prueba de Hipotesis: Proporcion Poblacional",
+       subtitle = "Prueba bilateral con alpha = 0.05",
+       x = "Valores Z",
+       y = "Densidad") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+### Conclusión
+
+```{r pregunta8-decision, echo=FALSE}
+if (z_stat_8 < z_critico_inf_8 || z_stat_8 > z_critico_sup_8) {
+  decision_8 <- "Se rechaza H0"
+  ubicacion_8 <- "en"
+} else {
+  decision_8 <- "No  Se rechaza H0"
+  ubicacion_8 <- "fuera de"
+}
+```
+
+**Decisión:** **`r decision_8`**
+
+**Justificación:**
+
+- Estadístico observado: $Z = `r round(z_stat_8, 4)`$
+- Valores críticos: $Z_{inferior} = `r round(z_critico_inf_8, 4)`$ y $Z_{superior} = `r round(z_critico_sup_8, 4)`$
+- Proporción muestral: $\hat{p} = `r round(p_hat_8, 4)`$ (`r round(p_hat_8*100, 2)`%)
+- Como $Z_{observado} = `r round(z_stat_8, 4)`$ está **`r ubicacion_8` la región de rechazo**, entonces **`r decision_8`**
+- P-valor = `r round(p_valor_8, 4)` `r ifelse(p_valor_8 < alpha_8, "<", ">")` $\alpha$ = `r alpha_8`
+
+
+## Pregunta 9. 
+
+En un artículo de investigación se reportan los siguientes datos sobre incidencia de malformaciones importantes entre recién nacidos de madres fumadoras de marihuana y de madres que no la fumaban. Pruebe si la proporción de defectos es diferente para los dos grupos. Considere un $\alpha=0.05$.
+
+|  | Fumadora | No fumadora
+--- | --- | --- 
+Tamaño muestral | 1246 | 11178
+Número de defectos importantes | 42 | 294
+Proporción | 0.0337  | 0.0263
+
+### Hipótesis
+
+$$H_0: p_1 - p_2 = 0 \quad \text{(o equivalentemente: } p_1 = p_2 \text{)}$$
+$$H_1: p_1 - p_2 \neq 0 \quad \text{(o equivalentemente: } p_1 \neq p_2 \text{)}$$
+
+Esta es una prueba de hipótesis **bilateral** para la **diferencia entre dos proporciones poblacionales**. Como ambos tamaños de muestra son grandes, se utilizara la **aproximación normal** con proporción combinada.
+
+### Evidencia muestral
+
+```{r pregunta9-datos, echo=FALSE}
+# Datos del problema
+# Grupo 1: Fumadoras
+n_9_1 <- 1246
+x_9_1 <- 42
+p_hat_9_1 <- 0.0337
+
+# Grupo 2: No fumadoras
+n_9_2 <- 11178
+x_9_2 <- 294
+p_hat_9_2 <- 0.0263
+
+# Parametros de la prueba
+alpha_9 <- 0.05
+
+# Proporcion combinada (pooled proportion)
+p_combinada_9 <- (x_9_1 + x_9_2) / (n_9_1 + n_9_2)
+
+# Error estandar bajo H0 (usando proporcion combinada)
+se_diff_p_9 <- sqrt(p_combinada_9 * (1 - p_combinada_9) * (1/n_9_1 + 1/n_9_2))
+
+# Diferencia de proporciones muestrales
+diff_p_9 <- p_hat_9_1 - p_hat_9_2
+
+# Estadistico de prueba Z
+z_stat_9 <- diff_p_9 / se_diff_p_9
+
+# Verificar condiciones para aproximacion normal
+n1p1_9 <- n_9_1 * p_hat_9_1
+n1q1_9 <- n_9_1 * (1 - p_hat_9_1)
+n2p2_9 <- n_9_2 * p_hat_9_2
+n2q2_9 <- n_9_2 * (1 - p_hat_9_2)
+```
+
+Datos del problema:
+
+**Grupo 1 (Madres fumadoras de marihuana):**
+
+- Tamaño de muestra: $n_1 = `r n_9_1`$
+- Número de defectos: $x_1 = `r x_9_1`$
+- Proporción muestral: $\hat{p}_1 = `r round(p_hat_9_1, 4)`$ (`r round(p_hat_9_1*100, 2)`%)
+
+**Grupo 2 (Madres no fumadoras):**
+
+- Tamaño de muestra: $n_2 = `r n_9_2`$
+- Número de defectos: $x_2 = `r x_9_2`$
+- Proporción muestral: $\hat{p}_2 = `r round(p_hat_9_2, 4)`$ (`r round(p_hat_9_2*100, 2)`%)
+
+**Parámetros de la prueba:**
+
+- Nivel de significancia: $\alpha = `r alpha_9`$
+- Diferencia observada: $\hat{p}_1 - \hat{p}_2 = `r round(diff_p_9, 4)`$
+
+
+**Proporción combinada:**
+
+$$\bar{p} = \frac{x_1 + x_2}{n_1 + n_2} = \frac{`r x_9_1` + `r x_9_2`}{`r n_9_1` + `r n_9_2`} = \frac{`r x_9_1 + x_9_2`}{`r n_9_1 + n_9_2`} = `r round(p_combinada_9, 4)`$$
+
+El **estadístico de prueba** se calcula como:
+
+$$Z = \frac{(\hat{p}_1 - \hat{p}_2) - 0}{\sqrt{\bar{p}(1-\bar{p})\left(\frac{1}{n_1} + \frac{1}{n_2}\right)}}$$
+
+$$Z = \frac{`r round(diff_p_9, 4)`}{\sqrt{`r round(p_combinada_9, 4)` \times `r round(1-p_combinada_9, 4)` \times \left(\frac{1}{`r n_9_1`} + \frac{1}{`r n_9_2`}\right)}} = \frac{`r round(diff_p_9, 4)`}{`r round(se_diff_p_9, 4)`} = `r round(z_stat_9, 4)`$$
+
+**Estadístico de prueba observado:** $Z = `r round(z_stat_9, 4)`$
+
+### Región de rechazo
+
+```{r pregunta9-region, echo=FALSE}
+# Valores criticos (prueba bilateral)
+z_critico_inf_9 <- qnorm(alpha_9/2)
+z_critico_sup_9 <- qnorm(1 - alpha_9/2)
+
+# p-valor (bilateral)
+p_valor_9 <- 2 * (1 - pnorm(abs(z_stat_9)))
+```
+
+Para una prueba bilateral con $\alpha = `r alpha_9`$:
+
+**Valores críticos:**
+
+- $Z_{\alpha/2} = Z_{`r alpha_9/2`} = `r round(z_critico_inf_9, 4)`$
+- $Z_{1-\alpha/2} = Z_{`r 1-alpha_9/2`} = `r round(z_critico_sup_9, 4)`$
+
+**P-valor:** $p = `r round(p_valor_9, 4)`$
+
+**Región de rechazo:** $Z < `r round(z_critico_inf_9, 4)`$ o $Z > `r round(z_critico_sup_9, 4)`$
+
+**Criterio de decisión:** 
+
+- Si $Z < `r round(z_critico_inf_9, 4)`$ o $Z > `r round(z_critico_sup_9, 4)`$, rechazamos $H_0$
+- Si $`r round(z_critico_inf_9, 4)` \leq Z \leq `r round(z_critico_sup_9, 4)`$, no rechazamos $H_0$
+
+```{r pregunta9-visualizacion, fig.height=4, fig.width=7, echo=FALSE}
+# Visualizacion de la prueba de hipotesis
+x_values_9 <- seq(-4, 4, length.out = 1000)
+y_values_9 <- dnorm(x_values_9)
+
+# Crear dataframe para ggplot
+df_plot_9 <- data.frame(x = x_values_9, y = y_values_9)
+
+ggplot(df_plot_9, aes(x = x, y = y)) +
+  geom_line(color = "blue", linewidth = 1) +
+  # Region de rechazo (cola izquierda)
+  geom_area(data = subset(df_plot_9, x <= z_critico_inf_9), 
+            aes(x = x, y = y), fill = "red", alpha = 0.3) +
+  # Region de rechazo (cola derecha)
+  geom_area(data = subset(df_plot_9, x >= z_critico_sup_9), 
+            aes(x = x, y = y), fill = "red", alpha = 0.3) +
+  # Valores criticos
+  geom_vline(xintercept = z_critico_inf_9, color = "red", linetype = "dashed", linewidth = 1) +
+  geom_vline(xintercept = z_critico_sup_9, color = "red", linetype = "dashed", linewidth = 1) +
+  # Estadistico observado
+  geom_vline(xintercept = z_stat_9, color = "darkgreen", linewidth = 1.2) +
+  # Anotaciones
+  annotate("text", x = z_critico_inf_9, y = 0.3, 
+           label = paste("Z =", round(z_critico_inf_9, 2)), 
+           hjust = 1.1, color = "red", size = 3.5) +
+  annotate("text", x = z_critico_sup_9, y = 0.3, 
+           label = paste("Z =", round(z_critico_sup_9, 2)), 
+           hjust = -0.1, color = "red", size = 3.5) +
+  annotate("text", x = z_stat_9, y = 0.35, 
+           label = paste("Z obs =", round(z_stat_9, 2)), 
+           hjust = 0.5, color = "darkgreen", size = 4) +
+  annotate("text", x = -3, y = 0.05, 
+           label = "Rechazo", 
+           color = "red", size = 3.5, fontface = "bold") +
+  annotate("text", x = 3, y = 0.05, 
+           label = "Rechazo", 
+           color = "red", size = 3.5, fontface = "bold") +
+  labs(title = "Prueba de Hipotesis: Diferencia entre Dos Proporciones",
+       subtitle = "Prueba bilateral con alpha = 0.05",
+       x = "Valores Z",
+       y = "Densidad") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+### Conclusión
+
+```{r pregunta9-decision, echo=FALSE}
+if (z_stat_9 < z_critico_inf_9 || z_stat_9 > z_critico_sup_9) {
+  decision_9 <- "Se rechaza H0"
+  ubicacion_9 <- "en"
+} else {
+  decision_9 <- "No  Se rechaza H0"
+  ubicacion_9 <- "fuera de"
+}
+```
+
+**Decisión:** **`r decision_9`**
+
+**Justificación:**
+
+- Estadístico observado: $Z = `r round(z_stat_9, 4)`$
+- Valores críticos: $Z_{inferior} = `r round(z_critico_inf_9, 4)`$ y $Z_{superior} = `r round(z_critico_sup_9, 4)`$
+- Diferencia de proporciones: $\hat{p}_1 - \hat{p}_2 = `r round(diff_p_9, 4)`$ (`r round(diff_p_9*100, 2)`% puntos porcentuales)
+- Como $Z_{observado} = `r round(z_stat_9, 4)`$ está **`r ubicacion_9` la región de rechazo**, entonces **`r decision_9`**
+- P-valor = `r round(p_valor_9, 4)` `r ifelse(p_valor_9 < alpha_9, "<", ">")` $\alpha$ = `r alpha_9`
+
+
+## Pregunta 10. 
+
+Considere los siguientes datos sobre carga de ruptura (kg/25mm de ancho) para varios tejidos tanto sin cardar como cardados. Utilice la prueba t por pares (muestras pareadas) para probar si la media de la ruptura de tejidos no cardados excede a la media de la ruptura de tejidos cardados. 
+
+Empleando un nivel de significancia de 0.01
+
+|  | 1 |  2 |  3 | 4 |  5 |  6 |  7 |  8
+--- | --- | --- | --- | --- | --- | --- | --- | ---
+Sin cardar | 36.4 | 55 | 51.5 | 38.7  | 43.2  | 48.8  | 25.6  | 49.8
+Cardado | 28.5  | 20 | 46 | 34.5 | 36.5  | 52.5 | 26.5  | 46.5
+
+### Hipótesis
+
+$$H_0: \mu_d \leq 0$$
+$$H_1: \mu_d > 0$$
+
+Donde $\mu_d = \mu_{sin\_cardar} - \mu_{cardado}$ es la media de las diferencias pareadas.
+
+Esta es una prueba de hipótesis **unilateral derecha** para **muestras pareadas** (datos dependientes). Como trabajamos con las diferencias dentro de cada par, se utilizara la **distribución t de Student**.
+
+### Evidencia muestral
+
+```{r pregunta10-datos, echo=FALSE}
+# Datos del problema
+sin_cardar_10 <- c(36.4, 55, 51.5, 38.7, 43.2, 48.8, 25.6, 49.8)
+cardado_10 <- c(28.5, 20, 46, 34.5, 36.5, 52.5, 26.5, 46.5)
+alpha_10 <- 0.01
+
+# Calcular las diferencias
+diferencias_10 <- sin_cardar_10 - cardado_10
+
+# Estadisticos de las diferencias
+n_10 <- length(diferencias_10)
+d_bar_10 <- mean(diferencias_10)
+s_d_10 <- sd(diferencias_10)
+gl_10 <- n_10 - 1
+
+# Error estandar de la media de las diferencias
+se_d_10 <- s_d_10 / sqrt(n_10)
+
+# Estadistico de prueba t
+t_stat_10 <- d_bar_10 / se_d_10
+
+# Crear tabla de datos
+datos_tabla_10 <- data.frame(
+  Tejido = 1:n_10,
+  Sin_cardar = sin_cardar_10,
+  Cardado = cardado_10,
+  Diferencia = diferencias_10
+)
+```
+
+**Datos pareados:**
+
+```{r pregunta10-tabla, echo=FALSE}
+kable(datos_tabla_10, 
+      col.names = c("Tejido", "Sin cardar", "Cardado", "Diferencia (d)"),
+      align = 'c',
+      caption = "Carga de ruptura (kg/25mm) y diferencias pareadas") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), 
+                full_width = FALSE)
+```
+
+**Estadísticos de las diferencias:**
+
+- Número de pares: $n = `r n_10`$
+- Media de las diferencias: $\bar{d} = `r round(d_bar_10, 4)`$ kg/25mm
+- Desviación estándar de las diferencias: $s_d = `r round(s_d_10, 4)`$ kg/25mm
+- Grados de libertad: $gl = n - 1 = `r gl_10`$
+- Nivel de significancia: $\alpha = `r alpha_10`$
+
+El **estadístico de prueba** se calcula como:
+
+$$t = \frac{\bar{d} - 0}{s_d / \sqrt{n}} = \frac{`r round(d_bar_10, 4)`}{`r round(s_d_10, 4)` / \sqrt{`r n_10`}} = \frac{`r round(d_bar_10, 4)`}{`r round(se_d_10, 4)`} = `r round(t_stat_10, 4)`$$
+
+**Estadístico de prueba observado:** $t = `r round(t_stat_10, 4)`$
+
+### Región de rechazo
+
+```{r pregunta10-region, echo=FALSE}
+# Valor critico (cola derecha)
+t_critico_10 <- qt(1 - alpha_10, gl_10)
+
+# p-valor (cola derecha)
+p_valor_10 <- 1 - pt(t_stat_10, gl_10)
+```
+
+Para una prueba unilateral derecha con $\alpha = `r alpha_10`$ y $gl = `r gl_10`$:
+
+**Valor crítico:** $t_{1-\alpha, `r gl_10`} = `r round(t_critico_10, 4)`$
+
+**P-valor:** $p = `r round(p_valor_10, 4)`$
+
+**Región de rechazo:** $t > `r round(t_critico_10, 4)`$
+
+**Criterio de decisión:** 
+
+- Si $t > `r round(t_critico_10, 4)`$, rechazamos $H_0$
+- Si $t \leq `r round(t_critico_10, 4)`$, no rechazamos $H_0$
+
+```{r pregunta10-visualizacion, fig.height=4, fig.width=7, echo=FALSE}
+# Visualizacion de la prueba de hipotesis
+x_values_10 <- seq(-4, 4, length.out = 1000)
+y_values_10 <- dt(x_values_10, gl_10)
+
+# Crear dataframe para ggplot
+df_plot_10 <- data.frame(x = x_values_10, y = y_values_10)
+
+ggplot(df_plot_10, aes(x = x, y = y)) +
+  geom_line(color = "blue", linewidth = 1) +
+  # Region de rechazo (cola derecha)
+  geom_area(data = subset(df_plot_10, x >= t_critico_10), 
+            aes(x = x, y = y), fill = "red", alpha = 0.3) +
+  # Valor critico
+  geom_vline(xintercept = t_critico_10, color = "red", linetype = "dashed", linewidth = 1) +
+  # Estadistico observado
+  geom_vline(xintercept = t_stat_10, color = "darkgreen", linewidth = 1.2) +
+  # Anotaciones
+  annotate("text", x = t_critico_10, y = max(y_values_10) * 0.5, 
+           label = paste("t critico =", round(t_critico_10, 2)), 
+           hjust = ifelse(t_stat_10 < t_critico_10, -0.1, 1.1), 
+           color = "red", size = 4) +
+  annotate("text", x = t_stat_10, y = max(y_values_10) * 0.6, 
+           label = paste("t obs =", round(t_stat_10, 2)), 
+           hjust = ifelse(t_stat_10 < t_critico_10, 1.1, -0.1), 
+           color = "darkgreen", size = 4) +
+  annotate("text", x = 3, y = max(y_values_10) * 0.1, 
+           label = "Region de\nrechazo", 
+           color = "red", size = 3.5, fontface = "bold") +
+  labs(title = paste("Prueba t para Muestras Pareadas (gl =", gl_10, ")"),
+       subtitle = "Prueba unilateral derecha con alpha = 0.01",
+       x = "Valores t",
+       y = "Densidad") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+### Conclusión
+
+```{r pregunta10-decision, echo=FALSE}
+if (t_stat_10 > t_critico_10) {
+  decision_10 <- "Se rechaza H0"
+  comparacion_10 <- ">"
+} else {
+  decision_10 <- "No  Se rechaza H0"
+  comparacion_10 <- "\\leq"
+}
+```
+
+**Decisión:** **`r decision_10`**
+
+**Justificación:**
+
+- Estadístico observado: $t = `r round(t_stat_10, 4)`$
+- Valor crítico: $t_{1-\alpha} = `r round(t_critico_10, 4)`$
+- Media de las diferencias: $\bar{d} = `r round(d_bar_10, 4)`$ kg/25mm
+- Como $t_{observado} = `r round(t_stat_10, 4)` `r comparacion_10` `r round(t_critico_10, 4)` = t_{crítico}$, entonces **`r decision_10`**
+- P-valor = `r round(p_valor_10, 4)` `r ifelse(p_valor_10 < alpha_10, "<", ">")` $\alpha$ = `r alpha_10`
