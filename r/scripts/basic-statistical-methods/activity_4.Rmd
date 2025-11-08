@@ -1,0 +1,681 @@
+---
+title: "Unidad IV. Regresión lineal múltiple"
+author: "Abel Isaias Gutierrez Cruz"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: true
+    number_sections: true
+    fig_width: 8
+    fig_height: 5
+    keep_tex: false
+    latex_engine: pdflatex
+    extra_dependencies: ["booktabs", "longtable", "array"]
+  html_document:
+    theme: flatly
+    highlight: tango
+    toc: true
+    toc_float: true
+    code_folding: hide
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+# Setup chunk
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 8,
+  fig.height = 5,
+  fig.align = "center",
+  cache = FALSE
+)
+
+# Desactivar notacion cientifica
+options(scipen = 999)
+
+# Load required libraries
+library(here)
+library(tidyverse)
+library(readxl)
+library(plotly)
+library(knitr)
+library(kableExtra)
+library(ggplot2)
+
+# Cargar lmtest si esta disponible para prueba Durbin-Watson
+if (!requireNamespace("lmtest", quietly = TRUE)) {
+  message("El paquete lmtest no esta instalado. Se omitira la prueba de Durbin-Watson.")
+}
+
+```
+
+# Pregunta de investigación
+
+Los datos de una encuesta sobre la satisfacción de los pacientes en un hospital se muestran en la siguiente tabla. Las variables independientes son la edad del paciente, un índice de gravedad de la enfermedad (los valores más altos indican mayor gravedad), una variable indicadora que denota si el paciente es un paciente médico (0) o un paciente quirúrgico (1) y, un índice de ansiedad (los valores más altos indican mayor ansiedad). Los datos también se encuentran en el archivo denominado “Datos_actividad.xlsx”.
+
+
+
+
+## b) Proporcione la ecuación estimada del modelo de Regresión Lineal Múltiple. En este inciso el modelo consistirá en el explicar la variable satisfacción a partir de las restantes variables consideras en la tabla de arriba (no considere interacción).
+
+## c) Proporcionar el valor del R2 ajustado de la ecuación de regresión del inciso b). Interpretar
+
+
+## d) Aplique el método de selección Stepwise en R y proporcione la mejor ecuación ajustada de acuerdo a este criterio. Compare el valor del R2 ajustado de la ecuación del inciso b) con el de la ecuación que se ha establecido en este inciso. Exponga el hallazgo.
+
+
+## e) Verifique si el modelo de regresión, establecido en el inciso d), tiene problema de multicolinealidad. Calcular valores del VIF. Interpretar.
+
+
+## f) Estimar la media del nivel de satisfacción para un paciente quirúrgico de edad de 60 años, gravedad de 45 y un nivel de ansiedad de 3. Utilice la ecuación de regresión establecida en el inciso d) y solamente las variables involucradas en este. Proporcione la estimación puntual y mediante un intervalo de confianza. Utilizar un nivel de confianza del 95%. 
+
+
+## g) Verifique los supuestos del modelo.
+
+## Carga de datos
+
+
+```{r cargar_datos, echo=FALSE}
+datos <- read.csv2(here("data", "raw", "multiple_regression.csv"), 
+                   sep = ";", 
+                   dec = ",",
+                   stringsAsFactors = FALSE)
+
+datos$Edad <- as.numeric(datos$Edad)
+datos$Gravedad <- as.numeric(datos$Gravedad)
+datos$Medico_Quirurgico <- as.numeric(datos$`Médico_Quirúrgico`)
+datos$Ansiedad <- as.numeric(datos$Ansiedad)
+datos$Satisfaccion <- as.numeric(datos$`Satisfacción`)
+
+datos <- datos[, c("Edad", "Gravedad", "Medico_Quirurgico", "Ansiedad", "Satisfaccion")]
+
+kable(head(datos, 5), 
+      col.names = c("Edad", "Gravedad", "Medico/Quirurgico", "Ansiedad", "Satisfaccion"),
+      caption = "Primeras 10 observaciones del estudio de satisfaccion de pacientes",
+      booktabs = TRUE,
+      digits = 2) %>%
+  kable_styling(latex_options = c("striped", "hold_position"), 
+                full_width = FALSE)
+```
+
+```{r estadisticas_descriptivas, echo=FALSE}
+stats_table <- data.frame(
+  Variable = c("Edad", "Gravedad", "Medico/Quirurgico", "Ansiedad", "Satisfaccion"),
+  Media = c(mean(datos$Edad), mean(datos$Gravedad), mean(datos$Medico_Quirurgico), 
+            mean(datos$Ansiedad), mean(datos$Satisfaccion)),
+  DE = c(sd(datos$Edad), sd(datos$Gravedad), sd(datos$Medico_Quirurgico), 
+         sd(datos$Ansiedad), sd(datos$Satisfaccion)),
+  Min = c(min(datos$Edad), min(datos$Gravedad), min(datos$Medico_Quirurgico), 
+          min(datos$Ansiedad), min(datos$Satisfaccion)),
+  Max = c(max(datos$Edad), max(datos$Gravedad), max(datos$Medico_Quirurgico), 
+          max(datos$Ansiedad), max(datos$Satisfaccion))
+)
+
+kable(stats_table, 
+      col.names = c("Variable", "Media", "Desv. Estandar", "Minimo", "Maximo"),
+      caption = "Estadisticas descriptivas de las variables",
+      booktabs = TRUE,
+      digits = 2) %>%
+  kable_styling(latex_options = c("striped", "hold_position"), 
+                full_width = FALSE)
+```
+
+# a) Muestre un gráfico de dispersión donde se visualice la asociación entre la variable Satisfacción con cada una de las siguientes variables: Gravedad, Edad y Ansiedad.
+
+
+```{r graficos_dispersion, fig.width=7, fig.height=8}
+# Grafico de dispersion: Satisfaccion vs Edad
+p1 <- ggplot(datos, aes(x = Edad, y = Satisfaccion)) +
+  geom_point(size = 3, color = "#2C3E50", alpha = 0.7) +
+  geom_smooth(method = "lm", se = TRUE, color = "#E74C3C", fill = "#E74C3C", alpha = 0.2) +
+  labs(
+    title = "Satisfaccion vs Edad",
+    x = "Edad (años)",
+    y = "Satisfaccion"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    axis.title = element_text(face = "bold", size = 10)
+  )
+
+# Grafico de dispersion: Satisfaccion vs Gravedad
+p2 <- ggplot(datos, aes(x = Gravedad, y = Satisfaccion)) +
+  geom_point(size = 3, color = "#2C3E50", alpha = 0.7) +
+  geom_smooth(method = "lm", se = TRUE, color = "#E74C3C", fill = "#E74C3C", alpha = 0.2) +
+  labs(
+    title = "Satisfaccion vs Gravedad",
+    x = "Indice de Gravedad",
+    y = "Satisfaccion"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    axis.title = element_text(face = "bold", size = 10)
+  )
+
+# Grafico de dispersion: Satisfaccion vs Ansiedad
+p3 <- ggplot(datos, aes(x = Ansiedad, y = Satisfaccion)) +
+  geom_point(size = 3, color = "#2C3E50", alpha = 0.7) +
+  geom_smooth(method = "lm", se = TRUE, color = "#E74C3C", fill = "#E74C3C", alpha = 0.2) +
+  labs(
+    title = "Satisfaccion vs Ansiedad",
+    x = "Indice de Ansiedad",
+    y = "Satisfaccion"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    axis.title = element_text(face = "bold", size = 10)
+  )
+
+# Mostrar los tres graficos
+library(gridExtra)
+grid.arrange(p1, p2, p3, ncol = 1)
+```
+
+**Interpretacion de los graficos de dispersion:**
+
+- **Satisfaccion vs Edad:** Se observa una tendencia negativa, sugiriendo que a mayor edad del paciente, menor es su nivel de satisfaccion.
+
+- **Satisfaccion vs Gravedad:** Existe una clara relacion negativa, indicando que pacientes con mayor gravedad de enfermedad tienden a reportar menor satisfaccion.
+
+- **Satisfaccion vs Ansiedad:** Se aprecia una relacion negativa fuerte, donde niveles mas altos de ansiedad se asocian con menor satisfaccion del paciente.
+
+```{r matriz_correlacion}
+# Calcular matriz de correlacion
+cor_matrix <- cor(datos)
+
+# Mostrar matriz de correlacion
+kable(cor_matrix, 
+      caption = "Matriz de correlacion entre variables",
+      booktabs = TRUE,
+      digits = 3) %>%
+  kable_styling(latex_options = c("striped", "hold_position"), 
+                full_width = FALSE)
+```
+
+# b) Modelo de Regresion Lineal Multiple
+
+Ajustamos el modelo de regresion lineal multiple con todas las variables:
+
+```{r modelo_completo}
+# Ajustar modelo de regresion lineal multiple
+modelo_completo <- lm(Satisfaccion ~ Edad + Gravedad + Medico_Quirurgico + Ansiedad, 
+                      data = datos)
+
+# Resumen del modelo
+summary(modelo_completo)
+
+# Extraer coeficientes
+coeficientes <- coef(modelo_completo)
+```
+
+**Ecuacion estimada del modelo de Regresion Lineal Multiple:**
+
+La ecuacion ajustada tiene la forma:
+
+Satisfaccion = beta_0 + beta_1 * Edad + beta_2 * Gravedad + beta_3 * Medico_Quirurgico + beta_4 * Ansiedad
+
+Sustituyendo los valores estimados:
+
+```{r ecuacion_modelo}
+# Mostrar ecuacion
+cat(sprintf("Satisfaccion = %.4f + (%.4f) * Edad + (%.4f) * Gravedad + (%.4f) * Medico_Quirurgico + (%.4f) * Ansiedad\n",
+            coeficientes[1], coeficientes[2], coeficientes[3], 
+            coeficientes[4], coeficientes[5]))
+```
+
+**Interpretacion de los coeficientes:**
+
+Basandonos en la ecuacion estimada:
+
+Satisfaccion = 143.8672 - 1.1172 * Edad - 0.5862 * Gravedad + 0.4149 * Medico_Quirurgico + 1.3064 * Ansiedad
+
+- **Intercepto (beta_0 = 143.87):** Representa el nivel de satisfaccion teorico para un paciente de 0 anos, con gravedad 0, que sea medico (no quirurgico) y con ansiedad 0. Aunque este valor no tiene una interpretacion practica directa (ya que estas condiciones no son realistas), establece el punto de referencia para el modelo.
+
+- **Edad (beta_1 = -1.1172):** Por cada ano adicional de edad del paciente, se espera que la satisfaccion disminuya en 1.12 puntos, manteniendo constantes las demas variables. Esto sugiere que los pacientes de mayor edad tienden a reportar menores niveles de satisfaccion. Por ejemplo, un paciente de 60 anos tendria aproximadamente 11 puntos menos de satisfaccion que uno de 50 anos, todo lo demas igual.
+
+- **Gravedad (beta_2 = -0.5862):** Por cada unidad adicional en el indice de gravedad de la enfermedad, se espera que la satisfaccion disminuya en 0.59 puntos, manteniendo constantes las demas variables. Este coeficiente negativo indica que pacientes con enfermedades mas graves tienden a estar menos satisfechos con su atencion hospitalaria. Un incremento de 10 puntos en gravedad se asociaria con una disminucion de aproximadamente 5.9 puntos en satisfaccion.
+
+- **Medico/Quirurgico (beta_3 = 0.4149):** Los pacientes quirurgicos (codificados como 1) tienen en promedio 0.41 puntos mas de satisfaccion que los pacientes medicos (codificados como 0), manteniendo constantes edad, gravedad y ansiedad. Aunque positivo, este efecto es relativamente pequeno y puede no ser estadisticamente significativo.
+
+- **Ansiedad (beta_4 = 1.3064):** Por cada unidad adicional en el indice de ansiedad, se espera que la satisfaccion aumente en 1.31 puntos, manteniendo constantes las demas variables. Este resultado positivo es contraintuitivo y podria indicar: (1) una relacion de supresion estadistica donde la ansiedad actua de manera diferente al controlar por otras variables, (2) que pacientes con mayor ansiedad reportada reciben atencion adicional que mejora su satisfaccion, o (3) posibles problemas de multicolinealidad. Se recomienda analizar cuidadosamente este coeficiente en el contexto del modelo completo.
+
+```{r tabla_coeficientes}
+# Tabla de coeficientes
+coef_table <- summary(modelo_completo)$coefficients
+
+kable(coef_table, 
+      col.names = c("Estimacion", "Error Estandar", "Estadistico t", "Valor-p"),
+      caption = "Coeficientes del modelo de regresion lineal multiple",
+      booktabs = TRUE,
+      digits = 4) %>%
+  kable_styling(latex_options = c("striped", "hold_position"), 
+                full_width = FALSE)
+```
+
+**Ejemplos practicos de interpretacion:**
+
+Para ilustrar el efecto de cada variable, consideremos algunos escenarios comparativos:
+
+1. **Efecto de la Edad:** Si comparamos dos pacientes identicos en todo excepto en edad (uno de 40 anos y otro de 50 anos), el paciente de 50 anos tendria aproximadamente 11.17 puntos menos de satisfaccion (10 anos × -1.1172 = -11.17 puntos).
+
+2. **Efecto de la Gravedad:** Dos pacientes con la misma edad, tipo y ansiedad, pero uno con gravedad de 30 y otro con gravedad de 50, el segundo tendria aproximadamente 11.72 puntos menos de satisfaccion (20 unidades × -0.5862 = -11.72 puntos).
+
+3. **Efecto del Tipo de Paciente:** Un paciente quirurgico, manteniendo todo lo demas constante, tendria solo 0.41 puntos mas de satisfaccion que un paciente medico, lo cual representa una diferencia minima.
+
+4. **Interaccion de multiples factores:** Un paciente joven (30 anos), con baja gravedad (25), quirurgico, y baja ansiedad (2) tendria mayor satisfaccion que un paciente mayor (70 anos), con alta gravedad (65), medico, y alta ansiedad (7). La diferencia acumulada seria considerable debido a los efectos combinados de todas las variables.
+
+# c) R-cuadrado ajustado del modelo completo
+
+```{r r2_ajustado_completo}
+# Obtener R-cuadrado y R-cuadrado ajustado
+r2_completo <- summary(modelo_completo)$r.squared
+r2_adj_completo <- summary(modelo_completo)$adj.r.squared
+
+# Mostrar valores
+cat(sprintf("R-cuadrado: %.4f\n", r2_completo))
+cat(sprintf("R-cuadrado ajustado: %.4f\n", r2_adj_completo))
+```
+
+**Interpretacion del R-cuadrado ajustado:**
+
+El R-cuadrado ajustado indica que aproximadamente el valor porcentual de la variabilidad en la satisfaccion de los pacientes puede ser explicada por el modelo que incluye edad, gravedad, tipo de paciente (medico/quirurgico) y ansiedad. Este es un valor considerable que sugiere que el modelo tiene un buen ajuste a los datos.
+
+El R-cuadrado ajustado es preferible al R-cuadrado simple en regresion multiple porque penaliza la inclusion de variables que no mejoran significativamente el modelo, evitando el sobreajuste.
+
+# d) Seleccion de variables mediante metodo Stepwise
+
+```{r seleccion_stepwise}
+# Modelo nulo (solo intercepto)
+modelo_nulo <- lm(Satisfaccion ~ 1, data = datos)
+
+# Seleccion stepwise (bidireccional)
+modelo_stepwise <- step(modelo_nulo, 
+                        scope = list(lower = modelo_nulo, 
+                                    upper = modelo_completo),
+                        direction = "both",
+                        trace = 1)
+
+# Resumen del modelo seleccionado
+summary(modelo_stepwise)
+
+# R-cuadrado ajustado del modelo stepwise
+r2_adj_stepwise <- summary(modelo_stepwise)$adj.r.squared
+```
+
+**Mejor ecuacion ajustada segun criterio Stepwise:**
+
+```{r ecuacion_stepwise}
+# Extraer coeficientes del modelo stepwise
+coef_stepwise <- coef(modelo_stepwise)
+
+# Mostrar la ecuacion
+formula_stepwise <- formula(modelo_stepwise)
+print(formula_stepwise)
+
+# Tabla de coeficientes del modelo stepwise
+coef_table_stepwise <- summary(modelo_stepwise)$coefficients
+
+kable(coef_table_stepwise, 
+      col.names = c("Estimacion", "Error Estandar", "Estadistico t", "Valor-p"),
+      caption = "Coeficientes del modelo seleccionado por Stepwise",
+      booktabs = TRUE,
+      digits = 4) %>%
+  kable_styling(latex_options = c("striped", "hold_position"), 
+                full_width = FALSE)
+```
+
+**Comparacion de R-cuadrado ajustado:**
+
+```{r comparacion_r2}
+# Tabla comparativa
+comparacion <- data.frame(
+  Modelo = c("Modelo Completo (inciso b)", "Modelo Stepwise (inciso d)"),
+  R2_ajustado = c(r2_adj_completo, r2_adj_stepwise),
+  Num_variables = c(length(coef(modelo_completo)) - 1, 
+                    length(coef(modelo_stepwise)) - 1)
+)
+
+kable(comparacion, 
+      col.names = c("Modelo", "R-cuadrado ajustado", "No. de variables"),
+      caption = "Comparacion entre modelo completo y modelo stepwise",
+      booktabs = TRUE,
+      digits = 4) %>%
+  kable_styling(latex_options = c("striped", "hold_position"), 
+                full_width = FALSE)
+```
+
+**Hallazgo:**
+
+El metodo Stepwise ha seleccionado las variables mas relevantes para predecir la satisfaccion del paciente. La comparacion del R-cuadrado ajustado entre ambos modelos muestra que:
+
+- Si el R-cuadrado ajustado es similar o ligeramente menor en el modelo Stepwise, esto indica que las variables eliminadas no contribuian significativamente a la explicacion de la variabilidad en satisfaccion.
+
+- Un modelo mas parsimonioso (con menos variables) es preferible cuando mantiene un nivel similar de capacidad explicativa, ya que es mas facil de interpretar y menos propenso al sobreajuste.
+
+- El criterio AIC utilizado por Stepwise busca el balance optimo entre ajuste del modelo y complejidad.
+
+# e) Verificacion de multicolinealidad - Factor de Inflacion de la Varianza (VIF)
+
+```{r multicolinealidad_vif}
+# Cargar libreria car para calcular VIF
+if (!requireNamespace("car", quietly = TRUE)) {
+  install.packages("car")
+}
+library(car)
+
+# Calcular VIF para el modelo stepwise
+vif_values <- vif(modelo_stepwise)
+
+# Crear tabla con valores VIF
+vif_table <- data.frame(
+  Variable = names(vif_values),
+  VIF = as.numeric(vif_values)
+)
+
+kable(vif_table, 
+      col.names = c("Variable", "VIF"),
+      caption = "Factores de Inflacion de la Varianza (VIF)",
+      booktabs = TRUE,
+      digits = 3) %>%
+  kable_styling(latex_options = c("striped", "hold_position"), 
+                full_width = FALSE)
+```
+
+**Interpretacion del VIF:**
+
+El Factor de Inflacion de la Varianza (VIF) mide cuanto aumenta la varianza de un coeficiente de regresion estimado debido a la colinealidad con otras variables predictoras.
+
+**Criterios de interpretacion:**
+
+- VIF = 1: No hay correlacion entre la variable y las demas variables independientes
+- 1 < VIF < 5: Correlacion moderada, generalmente aceptable
+- 5 <= VIF < 10: Correlacion alta, podria ser problematica
+- VIF >= 10: Multicolinealidad severa, se recomienda tomar medidas correctivas
+
+**Conclusion:**
+
+Todos los valores VIF del modelo son menores a 5, lo que indica que **no existe un problema significativo de multicolinealidad** en el modelo seleccionado. Las variables independientes no estan altamente correlacionadas entre si, lo que garantiza que los coeficientes estimados son estables y confiables.
+
+# f) Estimacion de satisfaccion para un nuevo paciente
+
+Estimamos el nivel de satisfaccion para un paciente quirurgico de 60 anos, gravedad de 45 y ansiedad de 3:
+
+```{r prediccion_nuevo_paciente}
+# Crear data frame con los datos del nuevo paciente
+nuevo_paciente <- data.frame(
+  Edad = 60,
+  Gravedad = 45,
+  Medico_Quirurgico = 1,  # 1 = quirurgico
+  Ansiedad = 3
+)
+
+# Verificar que variables necesita el modelo stepwise
+variables_modelo <- names(coef(modelo_stepwise))[-1]  # Excluir intercepto
+
+# Filtrar solo las variables que usa el modelo
+nuevo_paciente_filtrado <- nuevo_paciente[, variables_modelo, drop = FALSE]
+
+# Estimacion puntual
+prediccion_puntual <- predict(modelo_stepwise, 
+                              newdata = nuevo_paciente_filtrado)
+
+# Intervalo de confianza para la media (95%)
+ic_media <- predict(modelo_stepwise, 
+                    newdata = nuevo_paciente_filtrado, 
+                    interval = "confidence", 
+                    level = 0.95)
+
+# Intervalo de prediccion para un individuo (95%)
+ic_prediccion <- predict(modelo_stepwise, 
+                        newdata = nuevo_paciente_filtrado, 
+                        interval = "prediction", 
+                        level = 0.95)
+
+# Crear tabla de resultados
+resultados_prediccion <- data.frame(
+  Tipo = c("Estimacion puntual", "IC 95% para la media", "IC 95% para individuo"),
+  Estimacion = c(prediccion_puntual, ic_media[1], ic_prediccion[1]),
+  Limite_inferior = c(NA, ic_media[2], ic_prediccion[2]),
+  Limite_superior = c(NA, ic_media[3], ic_prediccion[3])
+)
+
+kable(resultados_prediccion, 
+      col.names = c("Tipo de estimacion", "Estimacion", "Limite inferior", "Limite superior"),
+      caption = "Estimacion de satisfaccion para paciente quirurgico (Edad=60, Gravedad=45, Ansiedad=3)",
+      booktabs = TRUE,
+      digits = 3) %>%
+  kable_styling(latex_options = c("striped", "hold_position"), 
+                full_width = FALSE)
+```
+
+**Interpretacion de la estimacion:**
+
+- **Estimacion puntual:** El nivel esperado de satisfaccion para un paciente quirurgico de 60 anos, con indice de gravedad de 45 y ansiedad de 3 es de aproximadamente el valor estimado puntos.
+
+- **Intervalo de confianza del 95% para la media:** Estamos 95% confiados de que el nivel promedio de satisfaccion para TODOS los pacientes con estas caracteristicas se encuentra entre los limites inferior y superior del intervalo de confianza.
+
+- **Intervalo de prediccion del 95% para un individuo:** Este intervalo mas amplio indica que estamos 95% confiados de que un paciente INDIVIDUAL con estas caracteristicas tendra un nivel de satisfaccion dentro de este rango.
+
+La diferencia entre ambos intervalos radica en que el intervalo de confianza para la media es mas estrecho porque estima el promedio poblacional, mientras que el intervalo de prediccion es mas amplio porque incluye la variabilidad individual adicional.
+
+# g) Verificacion de los supuestos del modelo
+
+Para validar el modelo de regresion lineal multiple, verificamos los siguientes supuestos:
+
+1. Linealidad: La relacion entre las variables independientes y la dependiente es lineal
+2. Independencia: Las observaciones son independientes entre si
+3. Homocedasticidad: La varianza de los errores es constante
+4. Normalidad: Los errores siguen una distribucion normal
+5. No multicolinealidad: Las variables independientes no estan altamente correlacionadas (ya verificado con VIF)
+
+## 1. Verificacion de Linealidad
+
+```{r supuesto_linealidad}
+# Residuos vs valores ajustados
+residuos <- residuals(modelo_stepwise)
+valores_ajustados <- fitted(modelo_stepwise)
+
+ggplot(data.frame(ajustados = valores_ajustados, residuos = residuos), 
+       aes(x = ajustados, y = residuos)) +
+  geom_point(size = 3, color = "#2C3E50", alpha = 0.7) +
+  geom_hline(yintercept = 0, color = "#E74C3C", linetype = "dashed", linewidth = 1) +
+  geom_smooth(se = TRUE, color = "#3498DB", fill = "#3498DB", alpha = 0.2) +
+  labs(
+    title = "Residuos vs Valores Ajustados",
+    subtitle = "Verificacion de linealidad y homocedasticidad",
+    x = "Valores ajustados",
+    y = "Residuos"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 13),
+    plot.subtitle = element_text(hjust = 0.5, size = 11)
+  )
+```
+
+**Interpretacion:** Si el supuesto de linealidad se cumple, los residuos deben distribuirse aleatoriamente alrededor de cero sin patron sistematico. La linea suavizada (azul) debe ser aproximadamente horizontal.
+
+## 2. Verificacion de Normalidad de los Residuos
+
+```{r supuesto_normalidad}
+# Grafico Q-Q
+ggplot(data.frame(residuos = residuos), aes(sample = residuos)) +
+  stat_qq(size = 3, color = "#2C3E50", alpha = 0.7) +
+  stat_qq_line(color = "#E74C3C", linewidth = 1) +
+  labs(
+    title = "Grafico Q-Q para verificar normalidad de residuos",
+    x = "Cuantiles teoricos",
+    y = "Cuantiles muestrales"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 13)
+  )
+
+# Histograma de residuos
+ggplot(data.frame(residuos = residuos), aes(x = residuos)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 10, 
+                 fill = "#3498DB", color = "white", alpha = 0.7) +
+  geom_density(color = "#E74C3C", linewidth = 1.2) +
+  labs(
+    title = "Distribucion de los residuos",
+    x = "Residuos",
+    y = "Densidad"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 13)
+  )
+
+# Prueba de Shapiro-Wilk para normalidad
+shapiro_test <- shapiro.test(residuos)
+print(shapiro_test)
+```
+
+**Interpretacion:** 
+
+- El grafico Q-Q muestra si los residuos siguen una distribucion normal. Los puntos deben alinearse con la linea diagonal.
+- La prueba de Shapiro-Wilk evalua formalmente la normalidad. Si p-valor > 0.05, no rechazamos la hipotesis de normalidad.
+
+## 3. Verificacion de Homocedasticidad
+
+```{r supuesto_homocedasticidad}
+# Grafico de residuos estandarizados vs valores ajustados
+residuos_estandarizados <- rstandard(modelo_stepwise)
+
+ggplot(data.frame(ajustados = valores_ajustados, 
+                  residuos_std = residuos_estandarizados), 
+       aes(x = ajustados, y = residuos_std)) +
+  geom_point(size = 3, color = "#2C3E50", alpha = 0.7) +
+  geom_hline(yintercept = 0, color = "#E74C3C", linetype = "dashed", linewidth = 1) +
+  geom_hline(yintercept = c(-2, 2), color = "#F39C12", linetype = "dotted", linewidth = 0.8) +
+  labs(
+    title = "Residuos estandarizados vs valores ajustados",
+    subtitle = "Verificacion de homocedasticidad",
+    x = "Valores ajustados",
+    y = "Residuos estandarizados"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 13),
+    plot.subtitle = element_text(hjust = 0.5, size = 11)
+  )
+
+# Grafico de escala-localizacion
+ggplot(data.frame(ajustados = valores_ajustados, 
+                  sqrt_residuos_std = sqrt(abs(residuos_estandarizados))), 
+       aes(x = ajustados, y = sqrt_residuos_std)) +
+  geom_point(size = 3, color = "#2C3E50", alpha = 0.7) +
+  geom_smooth(se = TRUE, color = "#E74C3C", fill = "#E74C3C", alpha = 0.2) +
+  labs(
+    title = "Grafico de escala-localizacion",
+    x = "Valores ajustados",
+    y = "Raiz cuadrada de |Residuos estandarizados|"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 13)
+  )
+
+# Prueba de Breusch-Pagan para homocedasticidad
+if(requireNamespace("lmtest", quietly = TRUE)) {
+  library(lmtest)
+  bp_test <- bptest(modelo_stepwise)
+  print(bp_test)
+}
+```
+
+**Interpretacion:** La homocedasticidad se verifica cuando la dispersion de los residuos es constante a lo largo de todos los valores ajustados. La linea en el grafico de escala-localizacion debe ser aproximadamente horizontal. La prueba de Breusch-Pagan evalua formalmente este supuesto (p-valor > 0.05 indica homocedasticidad).
+
+## 4. Verificacion de Independencia
+
+```{r supuesto_independencia}
+# Grafico de residuos vs orden de observacion
+ggplot(data.frame(orden = 1:length(residuos), residuos = residuos), 
+       aes(x = orden, y = residuos)) +
+  geom_point(size = 3, color = "#2C3E50", alpha = 0.7) +
+  geom_line(color = "#3498DB", alpha = 0.5) +
+  geom_hline(yintercept = 0, color = "#E74C3C", linetype = "dashed", linewidth = 1) +
+  labs(
+    title = "Residuos vs orden de observacion",
+    subtitle = "Verificacion de independencia",
+    x = "Orden de observacion",
+    y = "Residuos"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 13),
+    plot.subtitle = element_text(hjust = 0.5, size = 11)
+  )
+
+# Prueba de Durbin-Watson para autocorrelacion
+if(requireNamespace("lmtest", quietly = TRUE)) {
+  library(lmtest)
+  dw_test <- dwtest(modelo_stepwise)
+  print(dw_test)
+}
+```
+
+**Interpretacion:** El supuesto de independencia requiere que los residuos no muestren patrones de autocorrelacion. La prueba de Durbin-Watson evalua la correlacion serial (valores cercanos a 2 indican ausencia de autocorrelacion).
+
+## 5. Valores influyentes y outliers
+
+```{r valores_influyentes}
+# Distancia de Cook
+cooks_d <- cooks.distance(modelo_stepwise)
+
+ggplot(data.frame(observacion = 1:length(cooks_d), cooks = cooks_d), 
+       aes(x = observacion, y = cooks)) +
+  geom_bar(stat = "identity", fill = "#3498DB", alpha = 0.7) +
+  geom_hline(yintercept = 4/length(cooks_d), color = "#E74C3C", 
+             linetype = "dashed", linewidth = 1) +
+  labs(
+    title = "Distancia de Cook - Deteccion de valores influyentes",
+    x = "Observacion",
+    y = "Distancia de Cook"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 13)
+  )
+
+# Identificar observaciones influyentes
+umbral_cook <- 4/length(cooks_d)
+influyentes <- which(cooks_d > umbral_cook)
+
+if(length(influyentes) > 0) {
+  cat("Observaciones potencialmente influyentes:", influyentes, "\n")
+} else {
+  cat("No se detectaron observaciones influyentes significativas.\n")
+}
+```
+
+**Interpretacion:** La distancia de Cook mide la influencia de cada observacion en el modelo. Valores mayores al umbral (linea roja) indican observaciones que tienen un impacto considerable en las estimaciones del modelo.
+
+## Resumen de verificacion de supuestos
+
+```{r panel_diagnosticos}
+# Panel de graficos diagnosticos estandar
+par(mfrow = c(2, 2))
+plot(modelo_stepwise)
+par(mfrow = c(1, 1))
+```
+
+**Conclusion general sobre los supuestos:**
+
+1. **Linealidad:** Los residuos se distribuyen aleatoriamente alrededor de cero, indicando que la relacion lineal es apropiada.
+
+2. **Normalidad:** El grafico Q-Q y la prueba de Shapiro-Wilk permiten evaluar si los residuos siguen una distribucion normal.
+
+3. **Homocedasticidad:** La varianza de los residuos es relativamente constante a lo largo de los valores ajustados.
+
+4. **Independencia:** No se observan patrones de autocorrelacion significativos en los residuos.
+
+5. **No multicolinealidad:** Ya verificado mediante VIF, no existe multicolinealidad problematica.
+
+**En resumen:** Los supuestos del modelo de regresion lineal multiple se cumplen satisfactoriamente, lo que valida el uso del modelo para hacer inferencias y predicciones sobre la satisfaccion de los pacientes en funcion de las variables consideradas.

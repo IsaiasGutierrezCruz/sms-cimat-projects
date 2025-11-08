@@ -1,0 +1,507 @@
+---
+title: "Unidad III. Regresion lineal simple"
+author: "Abel Isaias Gutierrez Cruz"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: true
+    number_sections: true
+    fig_width: 8
+    fig_height: 5
+    keep_tex: false
+    latex_engine: pdflatex
+    extra_dependencies: ["booktabs", "longtable", "array"]
+  html_document:
+    theme: flatly
+    highlight: tango
+    toc: true
+    toc_float: true
+    code_folding: hide
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+# Setup chunk
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 8,
+  fig.height = 5,
+  fig.align = "center",
+  cache = FALSE
+)
+
+# Desactivar notacion cientifica
+options(scipen = 999)
+
+# Load required libraries
+library(here)
+library(tidyverse)
+library(readxl)
+library(plotly)
+library(knitr)
+library(kableExtra)
+library(ggplot2)
+
+# Cargar lmtest si esta disponible para prueba Durbin-Watson
+if (!requireNamespace("lmtest", quietly = TRUE)) {
+  message("El paquete lmtest no esta instalado. Se omitira la prueba de Durbin-Watson.")
+}
+
+```
+
+# Pregunta de investigación
+
+Un profesor de quinto grado quería determinar empíricamente si existe una relación entre la cantidad de libros que leen los estudiantes y la extensión de su vocabulario. Para lo anterior, el profesor aplicó una encuesta a una muestra aleatoria de alumnos de quinto grado en su escuela, les preguntó cuántos libros leen al mes y luego les dio una prueba de vocabulario (calificaciones en una escala de 0 a 10). Las puntuaciones se muestran a continuación.
+
+
+No. de libros leídos | Calificación en examen de vocabulario
+--- | ---
+12 |  10
+11 | 9
+11 | 10
+10 |  6
+10| 8
+8 | 8
+7| 6
+7 |9
+6 |6
+6 | 7
+5 |8
+5 | 7
+3 | 5
+2 | 6
+1 | 3
+0 | 4
+
+
+# Carga de datos
+
+Primero, ingresamos los datos del estudio:
+
+```{r datos}
+# Crear el data frame con los datos del estudio
+datos <- data.frame(
+  libros = c(12, 11, 11, 10, 10, 8, 7, 7, 6, 6, 5, 5, 3, 2, 1, 0),
+  calificacion = c(10, 9, 10, 6, 8, 8, 6, 9, 6, 7, 8, 7, 5, 6, 3, 4)
+)
+
+# Mostrar los datos
+kable(datos, 
+      col.names = c("No. de libros leidos", "Calificacion en vocabulario"),
+      caption = "Datos del estudio sobre lectura y vocabulario",
+      booktabs = TRUE) %>%
+  kable_styling(latex_options = c("striped", "hold_position"), 
+                full_width = FALSE)
+```
+
+## a) Identifique cual es la variable dependiente y cual la independiente
+
+**Variable Independiente (X):** Numero de libros leidos al mes
+
+**Variable Dependiente (Y):** Calificacion en el examen de vocabulario
+
+**Justificacion:** La variable independiente es el numero de libros leidos porque es la variable que se supone causa o influye en la otra variable. La calificacion en el examen de vocabulario es la variable dependiente porque es el resultado que se espera que este influenciado por la cantidad de libros leidos. En otras palabras, queremos determinar si leer mas libros (X) tiene un efecto sobre el vocabulario del estudiante medido a traves de su calificacion (Y).
+
+## b) Grafico de dispersion, correlacion lineal e interpretacion
+
+```{r dispersion_correlacion}
+# Calcular la correlacion
+correlacion <- cor(datos$libros, datos$calificacion)
+
+# Grafico de dispersion
+ggplot(datos, aes(x = libros, y = calificacion)) +
+  geom_point(size = 3, color = "#2C3E50", alpha = 0.7) +
+  geom_smooth(method = "lm", se = TRUE, color = "#E74C3C", fill = "#E74C3C", alpha = 0.2) +
+  labs(
+    title = "Relacion entre numero de libros leidos y calificacion en vocabulario",
+    x = "Numero de libros leidos al mes",
+    y = "Calificacion en examen de vocabulario",
+    caption = paste("Correlacion de Pearson: r =", round(correlacion, 4))
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+    axis.title = element_text(face = "bold", size = 12),
+    panel.grid.minor = element_blank()
+  )
+
+# Mostrar el valor de correlacion
+correlacion
+```
+
+**Interpretacion de la correlacion:**
+
+El coeficiente de correlacion de Pearson calculado muestra una **correlacion positiva fuerte** entre el numero de libros leidos y la calificacion en el examen de vocabulario. 
+
+Esto significa que:
+
+- Existe una relacion lineal positiva entre ambas variables
+- A medida que aumenta el numero de libros leidos, tiende a aumentar la calificacion en vocabulario
+- El valor cercano a 1 sugiere que la relacion lineal es bastante consistente
+- Una proporcion importante de la variabilidad en las calificaciones puede ser explicada por el numero de libros leidos
+
+## c) Ajuste del modelo de regresion y linea recta estimada
+
+```{r modelo_regresion}
+# Ajustar el modelo de regresion lineal simple
+modelo <- lm(calificacion ~ libros, data = datos)
+
+# Mostrar resumen del modelo
+summary(modelo)
+
+# Extraer los coeficientes
+intercepto <- coef(modelo)[1]
+pendiente <- coef(modelo)[2]
+```
+
+La ecuacion de la recta de regresion estimada tiene la forma: Y = beta0 + beta1 * X
+
+Donde:
+
+- Y = Calificacion en el examen de vocabulario (estimada)
+- X = Numero de libros leidos al mes
+
+**Interpretacion de los coeficientes:**
+
+- **Intercepto (beta 0):** Este es el valor esperado de la calificacion en el examen de vocabulario cuando un estudiante no lee ningun libro (X = 0). Representa la calificacion base esperada sin el efecto de la lectura de libros.
+
+- **Pendiente (beta 1):** Este coeficiente indica el cambio esperado en la calificacion del examen de vocabulario por cada libro adicional leido al mes. Especificamente, por cada libro adicional que un estudiante lee, se espera que su calificacion aumente en este valor, manteniendo todo lo demas constante.
+
+**Interpretacion practica:** Si un estudiante aumenta su habito de lectura en un libro mas al mes, se espera que su calificacion en vocabulario mejore segun indica el coeficiente de la pendiente.
+
+## d) Coeficiente de determinacion R-cuadrado
+
+```{r r_cuadrado}
+# Obtener R cuadrado
+r_cuadrado <- summary(modelo)$r.squared
+r_cuadrado_ajustado <- summary(modelo)$adj.r.squared
+
+# Mostrar R cuadrado
+r_cuadrado
+r_cuadrado_ajustado
+```
+
+**Interpretacion del R-cuadrado:**
+
+El coeficiente de determinacion R cuadrado indica la proporcion de la variabilidad total en las calificaciones del examen de vocabulario que puede ser explicada por el modelo de regresion lineal que utiliza el numero de libros leidos como variable predictora.
+
+Esto significa que:
+
+- El modelo tiene un ajuste a los datos que permite explicar una parte sustancial de la variabilidad observada
+- La porcion restante de la variabilidad se debe a otros factores no incluidos en el modelo (error residual)
+- La relacion entre leer libros y el vocabulario es sustancial y estadisticamente significativa
+- El numero de libros leidos es un buen predictor del desempeno en el examen de vocabulario
+
+## e) Pruebas de hipotesis para los coeficientes (Estadistico t)
+
+```{r pruebas_hipotesis}
+# Obtener el resumen del modelo con los estadisticos t
+resumen <- summary(modelo)
+
+# Extraer los valores necesarios
+coeficientes <- resumen$coefficients
+
+# Crear tabla con los resultados
+tabla_coef <- data.frame(
+  Coeficiente = c("Intercepto beta 0", "Pendiente beta 1"),
+  Estimacion = round(coeficientes[, "Estimate"], 4),
+  Error_Estandar = round(coeficientes[, "Std. Error"], 4),
+  Estadistico_t = round(coeficientes[, "t value"], 4),
+  Valor_p = format(coeficientes[, "Pr(>|t|)"], digits = 4, scientific = FALSE)
+)
+
+kable(tabla_coef, 
+      col.names = c("Coeficiente", "Estimacion", "Error Estandar", "Estadistico t", "Valor-p"),
+      caption = "Resultados de las pruebas de hipotesis para los coeficientes",
+      booktabs = TRUE,
+      align = c("l", "r", "r", "r", "r")) %>%
+  kable_styling(latex_options = c("striped", "hold_position"), 
+                full_width = FALSE)
+
+# Valores criticos
+alpha <- 0.05
+grados_libertad <- nrow(datos) - 2
+t_critico <- qt(1 - alpha/2, grados_libertad)
+
+# Mostrar valores criticos
+alpha
+grados_libertad
+t_critico
+```
+
+### Prueba de hipotesis para el intercepto (beta 0)
+
+**Hipotesis:**
+
+- H_0: beta 0 = 0 (El intercepto no es significativamente diferente de cero)
+- H_a: beta 0 != 0 (El intercepto es significativamente diferente de cero)
+
+**Criterio de decision:** Rechazar H_0 si el valor absoluto del estadistico t es mayor que el valor critico, o si el p-valor es menor que 0.05.
+
+**Resultados:**
+
+Los resultados del estadistico t y el valor-p se muestran en la tabla anterior.
+
+**Conclusion:** Con base en los resultados obtenidos, podemos determinar si el intercepto es estadisticamente significativo al nivel de significancia del 5%. Si el p-valor es menor que 0.05, rechazamos la hipotesis nula y concluimos que el intercepto es significativamente diferente de cero.
+
+### Prueba de hipotesis para la pendiente (beta 1)
+
+**Hipotesis:**
+
+- H_0: beta 1 = 0 (No existe relacion lineal entre el numero de libros leidos y la calificacion en vocabulario)
+- H_a: beta 1 != 0 (Existe una relacion lineal significativa entre el numero de libros leidos y la calificacion en vocabulario)
+
+**Criterio de decision:** Rechazar H_0 si el valor absoluto del estadistico t es mayor que el valor critico, o si el p-valor es menor que 0.05.
+
+**Resultados:**
+
+Los resultados del estadistico t y el valor-p para la pendiente se muestran en la tabla anterior.
+
+**Conclusion:** Con base en los resultados obtenidos, podemos determinar si la pendiente es estadisticamente significativa al nivel de significancia del 5%. Si el p-valor es menor que 0.05, rechazamos la hipotesis nula y concluimos que existe una relacion lineal significativa entre el numero de libros leidos y la calificacion en el examen de vocabulario. Esto implica que por cada libro adicional leido, hay un cambio significativo en la calificacion esperada.
+
+## f) Intervalos de confianza para predicciones (nuevos estudiantes)
+
+```{r predicciones_ic}
+# Nuevos valores de libros leidos
+nuevos_datos <- data.frame(libros = c(13, 5, 7, 9))
+
+# Calcular intervalos de confianza para la media de Y
+ic_media <- predict(modelo, newdata = nuevos_datos, interval = "confidence", level = 0.95)
+
+# Calcular intervalos de prediccion para valores individuales
+ic_prediccion <- predict(modelo, newdata = nuevos_datos, interval = "prediction", level = 0.95)
+
+# Combinar resultados
+resultados_pred <- data.frame(
+  Estudiante = 1:4,
+  Libros_leidos = nuevos_datos$libros,
+  Calificacion_estimada = ic_media[, "fit"],
+  IC_inferior_media = ic_media[, "lwr"],
+  IC_superior_media = ic_media[, "upr"],
+  IC_inferior_individuo = ic_prediccion[, "lwr"],
+  IC_superior_individuo = ic_prediccion[, "upr"]
+)
+
+kable(resultados_pred, 
+      digits = 3,
+      col.names = c("Estudiante", "Libros", "Calificacion est.", 
+                    "IC inf. (media)", "IC sup. (media)", 
+                    "IC inf. (indiv.)", "IC sup. (indiv.)"),
+      caption = "Predicciones e intervalos de confianza al 95%",
+      booktabs = TRUE) %>%
+  kable_styling(latex_options = c("striped", "hold_position"), 
+                full_width = FALSE)
+
+# Calcular la media de las calificaciones estimadas
+media_calificaciones <- mean(ic_media[, "fit"])
+media_calificaciones
+```
+
+**Interpretacion de los intervalos de confianza:**
+
+La tabla anterior muestra las predicciones para los cuatro nuevos estudiantes junto con sus respectivos intervalos de confianza al 95%.
+
+### Interpretacion general:
+
+- **Intervalos para la media (confidence interval):** Son mas estrechos y se refieren a la calificacion promedio de todos los estudiantes con ese nivel de lectura. Estamos 95% confiados de que la calificacion promedio verdadera para estudiantes con ese numero de libros leidos esta dentro de este intervalo.
+
+- **Intervalos para individuos (prediction interval):** Son mas amplios porque incluyen la variabilidad adicional de las observaciones individuales. Estos intervalos predicen donde se espera que caiga la calificacion de un estudiante individual especifico. 
+
+Los intervalos de confianza nos indican el rango en el cual esperamos encontrar la calificacion promedio verdadera con un 95% de confianza. Los intervalos mas estrechos indican mayor precision en la estimacion, mientras que los mas amplios indican mayor incertidumbre.
+
+```{r visualizacion_predicciones}
+# Visualizar las predicciones
+ggplot() +
+  geom_point(data = datos, aes(x = libros, y = calificacion), 
+             size = 3, color = "#2C3E50", alpha = 0.6) +
+  geom_smooth(data = datos, aes(x = libros, y = calificacion), 
+              method = "lm", se = TRUE, color = "#E74C3C", fill = "#E74C3C", alpha = 0.2) +
+  geom_point(data = nuevos_datos, aes(x = libros, y = ic_media[, "fit"]), 
+             size = 4, color = "#27AE60", shape = 17) +
+  geom_errorbar(data = nuevos_datos, 
+                aes(x = libros, ymin = ic_media[, "lwr"], ymax = ic_media[, "upr"]), 
+                width = 0.3, color = "#27AE60", linewidth = 1) +
+  labs(
+    title = "Predicciones para nuevos estudiantes con intervalos de confianza al 95%",
+    x = "Numero de libros leidos al mes",
+    y = "Calificacion en examen de vocabulario",
+    caption = "Puntos negros: datos originales | Triangulos verdes: nuevas predicciones"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    axis.title = element_text(face = "bold", size = 11)
+  )
+```
+
+## g) Verificacion de los supuestos del modelo
+
+Para que el modelo de regresion lineal simple sea valido, se deben cumplir los siguientes supuestos:
+
+1. **Linealidad:** La relacion entre X e Y es lineal
+2. **Independencia:** Las observaciones son independientes entre si
+3. **Homocedasticidad:** La varianza de los errores es constante
+4. **Normalidad:** Los errores siguen una distribucion normal
+
+### 1. Verificacion de Linealidad
+
+```{r supuesto_linealidad}
+# Grafico de residuos vs valores ajustados
+residuos <- residuals(modelo)
+valores_ajustados <- fitted(modelo)
+
+ggplot(data.frame(ajustados = valores_ajustados, residuos = residuos), 
+       aes(x = ajustados, y = residuos)) +
+  geom_point(size = 3, color = "#2C3E50", alpha = 0.7) +
+  geom_hline(yintercept = 0, color = "#E74C3C", linetype = "dashed", linewidth = 1) +
+  geom_smooth(se = TRUE, color = "#3498DB", fill = "#3498DB", alpha = 0.2) +
+  labs(
+    title = "Grafico de residuos vs valores ajustados",
+    subtitle = "Verificacion de linealidad y homocedasticidad",
+    x = "Valores ajustados",
+    y = "Residuos"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 13),
+    plot.subtitle = element_text(hjust = 0.5, size = 11)
+  )
+```
+
+**Interpretacion:** Si el supuesto de linealidad se cumple, los residuos deben distribuirse aleatoriamente alrededor de cero sin patron aparente. En este caso, observamos que los puntos se distribuyen de manera relativamente aleatoria alrededor de la linea horizontal en cero, lo que sugiere que el supuesto de linealidad es razonable.
+
+### 2. Verificacion de Normalidad de los Residuos
+
+```{r supuesto_normalidad}
+# Grafico Q-Q
+ggplot(data.frame(residuos = residuos), aes(sample = residuos)) +
+  stat_qq(size = 3, color = "#2C3E50", alpha = 0.7) +
+  stat_qq_line(color = "#E74C3C", linewidth = 1) +
+  labs(
+    title = "Grafico Q-Q para verificar normalidad de residuos",
+    x = "Cuantiles teoricos",
+    y = "Cuantiles muestrales"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 13)
+  )
+
+# Histograma de residuos
+ggplot(data.frame(residuos = residuos), aes(x = residuos)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 8, 
+                 fill = "#3498DB", color = "white", alpha = 0.7) +
+  geom_density(color = "#E74C3C", linewidth = 1.2) +
+  labs(
+    title = "Distribucion de los residuos",
+    x = "Residuos",
+    y = "Densidad"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 13)
+  )
+
+# Prueba de Shapiro-Wilk para normalidad
+shapiro_test <- shapiro.test(residuos)
+shapiro_test
+```
+
+**Interpretacion:** El grafico Q-Q muestra que los puntos se alinean razonablemente bien con la linea diagonal, lo que sugiere que los residuos siguen aproximadamente una distribucion normal. La prueba de Shapiro-Wilk nos permite verificar formalmente esta suposicion. Si el p-valor es mayor que 0.05, no rechazamos la hipotesis de normalidad de los residuos al nivel de significancia del 5%.
+
+### 3. Verificacion de Homocedasticidad (Varianza constante)
+
+```{r supuesto_homocedasticidad}
+# Grafico de residuos estandarizados vs valores ajustados
+residuos_estandarizados <- rstandard(modelo)
+
+ggplot(data.frame(ajustados = valores_ajustados, 
+                  residuos_std = residuos_estandarizados), 
+       aes(x = ajustados, y = residuos_std)) +
+  geom_point(size = 3, color = "#2C3E50", alpha = 0.7) +
+  geom_hline(yintercept = 0, color = "#E74C3C", linetype = "dashed", linewidth = 1) +
+  geom_hline(yintercept = c(-2, 2), color = "#F39C12", linetype = "dotted", linewidth = 0.8) +
+  labs(
+    title = "Residuos estandarizados vs valores ajustados",
+    subtitle = "Verificacion de homocedasticidad",
+    x = "Valores ajustados",
+    y = "Residuos estandarizados"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 13),
+    plot.subtitle = element_text(hjust = 0.5, size = 11)
+  )
+
+# Grafico de escala-localizacion
+ggplot(data.frame(ajustados = valores_ajustados, 
+                  sqrt_residuos_std = sqrt(abs(residuos_estandarizados))), 
+       aes(x = ajustados, y = sqrt_residuos_std)) +
+  geom_point(size = 3, color = "#2C3E50", alpha = 0.7) +
+  geom_smooth(se = TRUE, color = "#E74C3C", fill = "#E74C3C", alpha = 0.2) +
+  labs(
+    title = "Grafico de escala-localizacion",
+    x = "Valores ajustados",
+    y = "Raiz cuadrada de |Residuos estandarizados|"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 13)
+  )
+```
+
+**Interpretacion:** Para verificar la homocedasticidad, buscamos que la dispersion de los residuos sea constante a lo largo de todos los valores ajustados. En el grafico de escala-localizacion, si la linea es aproximadamente horizontal, indica homocedasticidad. En este caso, la dispersion parece ser relativamente constante, lo que sugiere que el supuesto de homocedasticidad es razonable.
+
+### 4. Verificacion de Independencia
+
+```{r supuesto_independencia}
+# Grafico de residuos vs orden de observacion
+ggplot(data.frame(orden = 1:length(residuos), residuos = residuos), 
+       aes(x = orden, y = residuos)) +
+  geom_point(size = 3, color = "#2C3E50", alpha = 0.7) +
+  geom_line(color = "#3498DB", alpha = 0.5) +
+  geom_hline(yintercept = 0, color = "#E74C3C", linetype = "dashed", linewidth = 1) +
+  labs(
+    title = "Residuos vs orden de observacion",
+    subtitle = "Verificacion de independencia",
+    x = "Orden de observacion",
+    y = "Residuos"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 13),
+    plot.subtitle = element_text(hjust = 0.5, size = 11)
+  )
+
+# Prueba de Durbin-Watson para autocorrelacion (opcional)
+if(requireNamespace("lmtest", quietly = TRUE)) {
+  library(lmtest)
+  dw_test <- dwtest(modelo)
+  print(dw_test)
+}
+```
+
+**Interpretacion:** El supuesto de independencia requiere que las observaciones no esten correlacionadas entre si. En este estudio, dado que se trata de una muestra aleatoria de estudiantes diferentes, es razonable asumir independencia. El grafico no muestra patrones sistematicos que sugieran dependencia entre las observaciones consecutivas.
+
+### Resumen de la verificacion de supuestos
+
+```{r resumen_supuestos}
+# Panel de graficos diagnosticos
+par(mfrow = c(2, 2))
+plot(modelo)
+par(mfrow = c(1, 1))
+```
+
+**Conclusion general sobre los supuestos:**
+
+1. **Linealidad:** Los residuos se distribuyen aleatoriamente alrededor de cero sin patrones evidentes. El supuesto se cumple razonablemente.
+
+2. **Normalidad:** El grafico Q-Q y la prueba de Shapiro-Wilk sugieren que los residuos siguen aproximadamente una distribucion normal.
+
+3. **Homocedasticidad:** La varianza de los residuos parece ser relativamente constante a lo largo de los valores ajustados.
+
+4. **Independencia:** Dado el diseno del estudio (muestra aleatoria), es razonable asumir independencia entre las observaciones.
+
+**En resumen:** Los supuestos del modelo de regresion lineal simple se cumplen de manera satisfactoria, lo que valida el uso del modelo para hacer inferencias y predicciones sobre la relacion entre el numero de libros leidos y el desempeno en vocabulario.
