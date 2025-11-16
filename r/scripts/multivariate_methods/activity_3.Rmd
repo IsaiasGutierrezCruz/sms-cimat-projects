@@ -1,0 +1,80 @@
+---
+title: "Unidad 3. Actividad 3. Ingreso a universidad"
+author: "Abel Isaias Gutierrez Cruz"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: true
+    number_sections: true
+    fig_width: 8
+    fig_height: 5
+    keep_tex: false
+    latex_engine: pdflatex
+    extra_dependencies: ["booktabs", "longtable", "array"]
+  html_document:
+    theme: flatly
+    highlight: tango
+    toc: true
+    toc_float: true
+    code_folding: hide
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+# Setup chunk
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 8,
+  fig.height = 5,
+  fig.align = "center",
+  cache = FALSE
+)
+
+# Desactivar notacion cientifica
+options(scipen = 999)
+
+# Load required libraries
+library(here)
+library(tidyverse)
+library(readxl)
+library(plotly)
+library(knitr)
+library(kableExtra)
+library(ggplot2)
+
+# Cargar lmtest si esta disponible para prueba Durbin-Watson
+if (!requireNamespace("lmtest", quietly = TRUE)) {
+  message("El paquete lmtest no esta instalado. Se omitira la prueba de Durbin-Watson.")
+}
+```
+
+
+# Description 
+
+Una importante universidad en el estado de Guanajuato dentro de su vasta oferta educativa promueve el cursar una maestría en Matemáticas. Resultado de la última campaña de promoción, 15 candidatos completaron el proceso de admisión indicado en la convocatoria vigente. Además de la entrevista ante el comité de admisión, los aspirantes presentaron un examen de conocimiento. Este examen busca evaluar cinco áreas principales del conocimiento matemático: Geometría Diferencial (geodif), Análisis Complejo (ancompl), Álgebra (alg), Análisis Real (anreal) y Estadística. Las puntuaciones obtenidas por los candidatos se muestran en el archivo Calif_ingreso. A fin de tener un mejor conocimiento de los aspirantes a ingresar, es necesario realizar un análisis exploratorio de los resultados con el fin de tener información relevante en cuanto el nivel y habilidades que tienen los aspirantes antes de su ingreso a la maestría. Por lo tanto, basados en los datos proporcionados y aplicando las herramientas analizadas en esta unidad, responda las siguientes preguntas:
+
+## a) Para iniciar, identifique y defina con claridad el objeto o unidad de interés del presente estudio. Puede apoyarse en el formato que se anexa.
+
+## b) Para cada una de las variables consideradas en este estudio mencione su tipo (categórica/numérica) y su escala de medición (nominal/ordinal/intervalo/razón). Puede apoyarse en el formato que se anexa.
+
+
+Nombre | Tipo (Numerica, categorica) | Escala medición (nominal, ordinal, intervalo, razón) | Dependiente/independiente (si aplica para el ejemplo)
+--- | --- | --- | ---
+
+
+## c) Proceda a realizar el análisis descriptivo de la base de datos y responda las siguientes preguntas:
+
+### i. ¿En alguna de las variables bajo estudio es posible identificar casos que podrían ser considerados como atípicos (outliers)? Justifique la técnica o herramienta empleada y su
+respuesta con evidencia verificable. 
+### ii. ¿En cuáles variables se presentan y cuántos casos tendría? Es necesario presentar evidencia que permita comprobar la veracidad de su respuesta.
+
+## d) Explorando más profundamente los datos, ¿hay evidencia que existen variables con alta correlación entre ellas? Justifique la técnica o herramienta empleada y la respuesta con evidencia verificable y en caso de ser afirmativa mencione los dos pares de variables más altamente correlacionadas (ya sea positiva o negativamente).
+
+## e) A los integrantes del comité de ingreso les gustaría conocer si resulta verdadera la afirmación deo que, a partir de los datos recolectados, los hombres alcanzan mejores puntuaciones en las cinco áreas que las mujeres. ¿Hay evidencia que apoyen esta afirmación? Justifique la elección de la
+herramienta empleada para realizar el análisis. De igual forma justifique su respuesta con
+evidencia verificable.
+
+
+## f) En el caso de que se dictamine el ingreso de los 20 aspirantes, una de las acciones que implementará la coordinación del programa para nivelar las habilidades y conocimiento de los nuevos estudiantes y combatir la deserción escolar es ofrecer cursos propedéuticos “personalizado” a los aspirantes dependiendo de los resultados obtenidos. Debido al limitado número de profesores del departamento es prácticamente imposible asignar a cada aspirante un tutor aunado a que los cursos se estarían impartiendo el mes previo al inicio de clases. La estrategia que se pretende seguir se basa en agrupar aquellos aspirantes que tuvieron un rendimiento similar en las cinco áreas evaluadas y asignarles un tutor que los ayude a revisar y alcanzar el nivel esperado en todas las materias. A partir de los datos proporcionados, ¿existirán candidatos que presentan un nivel similar en las cinco áreas que permitan formar los grupos de preparación? Justifique la elección de la técnica o herramienta empleada, así como su respuesta con evidencia verificable. En caso de existir similitud entre candidatos, mencione tres ejemplos de posibles de agrupaciones.
